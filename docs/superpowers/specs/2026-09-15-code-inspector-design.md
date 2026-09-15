@@ -40,7 +40,7 @@ The base ref is `merge-base(HEAD, upstream)`, where upstream is the first of:
 3. `origin/main`, then `origin/master`
 
 On a feature branch this yields the branch point. On a repo where work happens
-directly on `main` — which is the normal case in several of this user's projects
+directly on `main` — which is the normal case in several of your projects
 — it yields the last pushed commit, so the view becomes *unpushed commits plus
 uncommitted changes*. One rule, a sensible answer in both cases.
 
