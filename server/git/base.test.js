@@ -57,38 +57,44 @@ describe('resolveBase auto', () => {
   it('tier 3: falls back to origin/main when no upstream or origin/HEAD', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')
-    const commitA = repo.commit('commit-A')
+    const commitRoot = repo.commit('commit-root')
     repo.write('b.txt', 'two\n')
-    const commitB = repo.commit('commit-B')
+    const commitMain = repo.commit('commit-main')
+    repo.write('c.txt', 'three\n')
+    const commitMaster = repo.commit('commit-master')
 
     repo.run('remote', 'add', 'origin', 'https://example.invalid/repo.git')
-    // origin/main points to commitA (tier 3)
-    repo.run('update-ref', 'refs/remotes/origin/main', commitA)
+    // origin/main points to commitMain (tier 3, not root)
+    repo.run('update-ref', 'refs/remotes/origin/main', commitMain)
+    // origin/master points to commitMaster (to test that main is checked first)
+    repo.run('update-ref', 'refs/remotes/origin/master', commitMaster)
 
-    // Already on main, just move to commitB
-    repo.run('reset', '--hard', commitB)
+    // Already on main, reset to HEAD
+    repo.run('reset', '--hard', commitMaster)
 
     const { base, label } = await resolveBase(repo.dir, { mode: 'auto' })
-    expect(base).toBe(commitA)
+    expect(base).toBe(commitMain)
     expect(label).toBe('vs origin/main')
   })
 
   it('tier 4: falls back to origin/master when no main, HEAD, or @{upstream}', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')
-    const commitA = repo.commit('commit-A')
+    const commitRoot = repo.commit('commit-root')
     repo.write('b.txt', 'two\n')
-    const commitB = repo.commit('commit-B')
+    const commitMaster = repo.commit('commit-master')
+    repo.write('c.txt', 'three\n')
+    const commitHead = repo.commit('commit-head')
 
     repo.run('remote', 'add', 'origin', 'https://example.invalid/repo.git')
-    // origin/master points to commitA (tier 4)
-    repo.run('update-ref', 'refs/remotes/origin/master', commitA)
+    // origin/master points to commitMaster (tier 4, not root)
+    repo.run('update-ref', 'refs/remotes/origin/master', commitMaster)
 
-    // Already on main, just move to commitB
-    repo.run('reset', '--hard', commitB)
+    // Already on main, reset to HEAD
+    repo.run('reset', '--hard', commitHead)
 
     const { base, label } = await resolveBase(repo.dir, { mode: 'auto' })
-    expect(base).toBe(commitA)
+    expect(base).toBe(commitMaster)
     expect(label).toBe('vs origin/master')
   })
 
