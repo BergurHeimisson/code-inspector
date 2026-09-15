@@ -5,7 +5,9 @@ import FileView from './FileView.jsx'
 // jsdom reports every element as zero-sized, which makes the virtualiser
 // render nothing. Give it a viewport so rows are produced. @tanstack/virtual-core
 // sizes the scroll container from offsetWidth/offsetHeight, not getBoundingClientRect,
-// so both need patching here.
+// so both need patching here. No afterAll restore is needed: vitest's default
+// per-file isolation discards the whole jsdom realm between files, so this patch
+// never leaks. That stops being true if `isolate: false` is ever set.
 beforeAll(() => {
   Element.prototype.getBoundingClientRect = function getBoundingClientRect() {
     return { width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, x: 0, y: 0 }
@@ -76,5 +78,15 @@ describe('FileView', () => {
   it('shows the old path for a rename', () => {
     render(<FileView view={view({ status: 'R', oldPath: 'src/old.js' })} lineHeight={20} />)
     expect(screen.getByText('renamed from src/old.js')).toBeInTheDocument()
+  })
+
+  // Pins the wiring between the lineHeight prop and each row's rendered
+  // height only. jsdom performs no box layout, so this cannot confirm the
+  // rows actually line up on screen — only a real browser can do that.
+  it('sizes a line row from a non-default lineHeight prop', () => {
+    render(<FileView view={view()} lineHeight={28} />)
+    const rowEl = screen.getByText('const a = 1').closest('[data-state]')
+    expect(rowEl.style.height).toBe('28px')
+    expect(rowEl.style.lineHeight).toBe('28px')
   })
 })
