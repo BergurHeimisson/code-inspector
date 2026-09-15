@@ -52,4 +52,33 @@ describe('buildTree', () => {
     const tree = buildTree([record])
     expect(tree[0].children[0].file).toBe(record)
   })
+
+  it('rebuilds directory nodes field by field, not by spread, at every depth', () => {
+    const tree = buildTree([file('src/feed/parse.js'), file('src/tts/speak.js')])
+    const top = tree[0]
+    expect(Object.keys(top).sort()).toEqual(['children', 'name', 'path', 'type'])
+    const nested = top.children[0]
+    expect(Object.keys(nested).sort()).toEqual(['children', 'name', 'path', 'type'])
+  })
+
+  it('collapses a three-level chain of single-child directories', () => {
+    const tree = buildTree([file('a/b/c/file.js')])
+    expect(tree).toHaveLength(1)
+    expect(tree[0].name).toBe('a/b/c')
+    expect(tree[0].path).toBe('a/b/c')
+    expect(tree[0].children.map((c) => c.name)).toEqual(['file.js'])
+  })
+
+  it('does not collapse a directory with one directory child and one file child', () => {
+    const tree = buildTree([file('src/x.js'), file('src/sub/y.js')])
+    expect(tree[0].name).toBe('src')
+    expect(tree[0].children.map((c) => c.name)).toEqual(['sub', 'x.js'])
+  })
+
+  it('sorts directories before files within a collapsed node', () => {
+    const tree = buildTree([file('src/feed/zeta.js'), file('src/feed/alpha/deep.js')])
+    expect(tree[0].name).toBe('src/feed')
+    expect(tree[0].children.map((c) => c.type)).toEqual(['dir', 'file'])
+    expect(tree[0].children.map((c) => c.name)).toEqual(['alpha', 'zeta.js'])
+  })
 })
