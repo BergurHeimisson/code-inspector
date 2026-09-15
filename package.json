@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": { "code-inspector": "./bin/code-inspector" },
+  "bin": {
+    "code-inspector": "./bin/code-inspector"
+  },
   "scripts": {
     "dev": "concurrently -n server,web -c cyan,magenta \"node server/start.js --dev\" \"vite\"",
     "build": "vite build",
@@ -23,6 +25,7 @@
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@vitejs/plugin-react": "6.1.1",
     "concurrently": "10.0.5",
     "jsdom": "30.0.1",
