@@ -58,6 +58,14 @@ describe('listDirectory', () => {
   })
 
   it('rejects a path that only shares a name prefix with home', async () => {
-    await expect(listDirectory(`${home}-elsewhere`, { home })).rejects.toBeTruthy()
+    const sibling = `${home}-elsewhere`
+    await mkdir(sibling, { recursive: true })
+    try {
+      await expect(listDirectory(sibling, { home })).rejects.toMatchObject({
+        code: 'EOUTSIDEHOME'
+      })
+    } finally {
+      await rm(sibling, { recursive: true, force: true })
+    }
   })
 })
