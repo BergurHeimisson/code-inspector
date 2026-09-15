@@ -7,6 +7,7 @@ import { fileLines } from '../git/file.js'
 import { listDirectory } from '../browse.js'
 import { loadConfig } from '../config.js'
 import { loadState, saveState, rememberProject } from '../state.js'
+import { initialProject } from '../launch.js'
 
 export function parseRange(value) {
   if (!value || value === 'auto') return { mode: 'auto' }
@@ -117,6 +118,14 @@ export function apiRouter() {
     try {
       if (!req.body?.path) throw badRequest('Missing path in body')
       res.json(await rememberProject(req.body.path))
+    } catch (error) {
+      next(error)
+    }
+  })
+
+  router.get('/initial', async (req, res, next) => {
+    try {
+      res.json({ path: await initialProject(process.env.CODE_INSPECTOR_CWD ?? process.cwd()) })
     } catch (error) {
       next(error)
     }
