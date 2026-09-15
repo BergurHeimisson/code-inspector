@@ -77,7 +77,11 @@ export async function fileLines(repoPath, base, relPath, { maxFileBytes }) {
 
   if (status === '?') return uniform(relPath, oldPath, status, texts, 'added')
 
-  const diff = await git(repoPath, ['diff', '-U0', '--find-renames', base, '--', relPath])
+  // Same rename-detection constraint as statusOf: without the old path in
+  // the diffed set, git can't pair a rename and reports the whole file as
+  // added.
+  const pathspec = oldPath ? [oldPath, relPath] : [relPath]
+  const diff = await git(repoPath, ['diff', '-U0', '--find-renames', base, '--', ...pathspec])
   const { addedLines, deletions } = parseHunks(diff)
   const added = new Set(addedLines)
 

@@ -90,6 +90,20 @@ describe('fileLines', () => {
     expect(view.oldPath).toBe('old.js')
   })
 
+  it('tints only the changed line of a renamed file', async () => {
+    repo = await makeRepo()
+    repo.write('old.js', 'a\nb\nc\nd\ne\nf\n')
+    const base = repo.commit('first')
+    repo.run('mv', 'old.js', 'new.js')
+    repo.write('new.js', 'a\nb\nc\nD\ne\nf\n')
+
+    const view = await fileLines(repo.dir, base, 'new.js', OPTS)
+    expect(states(view)).toEqual([
+      'unchanged', 'unchanged', 'unchanged', 'added', 'unchanged', 'unchanged'
+    ])
+    expect(view.lines[3].text).toBe('D')
+  })
+
   it('flags a binary file and returns no lines', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')
