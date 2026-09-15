@@ -25,16 +25,28 @@ export const DEFAULT_CONFIG = {
   }
 }
 
+function isPlainObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+// A malformed hand-edit is the expected case here, not an exotic one: a bad
+// key costs the user that one setting, never the whole file, and never a
+// crash. Type-mismatched or unrecognised-shape values fall back to the
+// default rather than propagating downstream.
 function merge(defaults, override) {
-  if (override === null || typeof override !== 'object' || Array.isArray(override)) {
-    return defaults
+  if (!isPlainObject(override)) {
+    return structuredClone(defaults)
   }
   const result = { ...defaults }
   for (const [key, value] of Object.entries(override)) {
-    result[key] =
-      typeof defaults[key] === 'object' && defaults[key] !== null
-        ? merge(defaults[key], value)
-        : value
+    const defaultValue = defaults[key]
+    if (isPlainObject(defaultValue)) {
+      result[key] = isPlainObject(value) ? merge(defaultValue, value) : structuredClone(defaultValue)
+    } else if (key in defaults) {
+      result[key] = typeof value === typeof defaultValue ? value : defaultValue
+    } else {
+      result[key] = value
+    }
   }
   return result
 }
@@ -45,9 +57,13 @@ export async function loadConfig() {
     return merge(DEFAULT_CONFIG, JSON.parse(await readFile(file, 'utf8')))
   } catch (error) {
     if (error.code === 'ENOENT') {
-      await mkdir(configDir(), { recursive: true })
-      await writeFile(file, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`)
+      try {
+        await mkdir(configDir(), { recursive: true })
+        await writeFile(file, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`)
+      } catch {
+        // Being unable to persist the defaults is not a reason to refuse to start.
+      }
     }
-    return DEFAULT_CONFIG
+    return structuredClone(DEFAULT_CONFIG)
   }
 }
