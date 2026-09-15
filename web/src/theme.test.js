@@ -18,6 +18,7 @@ describe('applyTheme', () => {
         unchanged: '#2f6b4a',
         deleted: '#8a3030'
       },
+      'dark',
       root
     )
 
@@ -27,8 +28,33 @@ describe('applyTheme', () => {
   })
 
   it('ignores tokens it does not know', () => {
-    applyTheme({ surface: '#111111', bogus: 'nope' }, root)
+    applyTheme({ surface: '#111111', bogus: 'nope' }, 'dark', root)
     expect(root.style.getPropertyValue('--color-bogus')).toBe('')
+  })
+
+  it('adds the dark class when the theme is dark', () => {
+    applyTheme({}, 'dark', root)
+    expect(root.classList.contains('dark')).toBe(true)
+  })
+
+  it('removes the dark class when the theme is light, even if already present', () => {
+    root.classList.add('dark')
+    applyTheme({}, 'light', root)
+    expect(root.classList.contains('dark')).toBe(false)
+  })
+
+  it('converges when toggling dark -> light -> dark', () => {
+    applyTheme({}, 'dark', root)
+    applyTheme({}, 'light', root)
+    applyTheme({}, 'dark', root)
+    expect(root.classList.contains('dark')).toBe(true)
+  })
+
+  it('preserves an unrelated class across theme transitions', () => {
+    root.classList.add('unrelated')
+    applyTheme({}, 'dark', root)
+    applyTheme({}, 'light', root)
+    expect(root.classList.contains('unrelated')).toBe(true)
   })
 })
 
