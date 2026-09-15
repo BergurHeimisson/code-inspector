@@ -1,11 +1,14 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir, writeFile, realpath } from 'node:fs/promises'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 
 export async function makeRepo() {
-  const dir = await mkdtemp(join(tmpdir(), 'code-inspector-'))
+  // realpath: on macOS, tmpdir() sits under a /var symlink to /private/var;
+  // `git rev-parse --show-toplevel` resolves it, so callers comparing paths
+  // need the resolved form too.
+  const dir = await realpath(await mkdtemp(join(tmpdir(), 'code-inspector-')))
   const run = (...args) =>
     execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim()
 
