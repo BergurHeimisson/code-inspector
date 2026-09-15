@@ -12,24 +12,28 @@ function Stub({ children }) {
   return <div className="p-6 text-sm opacity-60">{children}</div>
 }
 
-function DeletionRow({ count }) {
+function DeletionRow({ count, lineHeight }) {
   return (
     <div
       className="flex items-center gap-2 px-3 font-mono text-[11px] italic"
-      style={{ backgroundColor: TINT.deleted }}
+      style={{ backgroundColor: TINT.deleted, height: `${lineHeight}px` }}
     >
       <span className="opacity-80">{`${count} line${count === 1 ? '' : 's'} deleted`}</span>
     </div>
   )
 }
 
-function LineRow({ row }) {
+function LineRow({ row, lineHeight }) {
   return (
     <div
       data-state={row.state}
       data-line={row.n}
-      className="flex font-mono text-[12.5px] leading-[20px]"
-      style={{ backgroundColor: TINT[row.state] }}
+      className="flex font-mono text-[12.5px]"
+      style={{
+        backgroundColor: TINT[row.state],
+        height: `${lineHeight}px`,
+        lineHeight: `${lineHeight}px`
+      }}
     >
       <span className="w-14 shrink-0 select-none pr-3 text-right opacity-40">{row.n}</span>
       <pre className="m-0 whitespace-pre">{row.text}</pre>
@@ -82,7 +86,9 @@ export default function FileView({ view, lineHeight }) {
                     transform: `translateY(${item.start}px)`
                   }}
                 >
-                  {row.kind === 'line' ? <LineRow row={row} /> : <DeletionRow count={row.count} />}
+                  {row.kind === 'line'
+                    ? <LineRow row={row} lineHeight={lineHeight} />
+                    : <DeletionRow count={row.count} lineHeight={lineHeight} />}
                 </div>
               )
             })}
