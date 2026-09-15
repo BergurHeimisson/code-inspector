@@ -104,6 +104,28 @@ describe('fileLines', () => {
     expect(view.lines[3].text).toBe('D')
   })
 
+  it('still detects a rename as R with its oldPath when the restricted diff alone would say A', async () => {
+    repo = await makeRepo()
+    repo.write('old.js', 'a\nb\nc\n')
+    const base = repo.commit('first')
+    repo.run('mv', 'old.js', 'new.js')
+
+    const view = await fileLines(repo.dir, base, 'new.js', OPTS)
+    expect(view.status).toBe('R')
+    expect(view.oldPath).toBe('old.js')
+  })
+
+  it('takes the cheap restricted-diff path for an ordinary modification', async () => {
+    repo = await makeRepo()
+    repo.write('plain.js', 'a\nb\nc\n')
+    const base = repo.commit('first')
+    repo.write('plain.js', 'a\nB\nc\n')
+
+    const view = await fileLines(repo.dir, base, 'plain.js', OPTS)
+    expect(view.status).toBe('M')
+    expect(view.oldPath).toBe(null)
+  })
+
   it('flags a binary file and returns no lines', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')

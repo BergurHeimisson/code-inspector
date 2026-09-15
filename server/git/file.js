@@ -8,13 +8,7 @@ function toLines(text) {
   return body === '' ? [] : body.split('\n')
 }
 
-async function statusOf(repoPath, base, relPath) {
-  // Rename detection needs both the old and new path in the diffed set, so
-  // this cannot be restricted to a single pathspec — a pathspec-limited diff
-  // never shows git the deleted counterpart and renames come back as 'A'.
-  const diff = await gitTry(repoPath, ['diff', '--name-status', '-z', '--find-renames', base])
-  const tokens = (diff ?? '').split('\0').filter((token) => token !== '')
-
+function parseNameStatus(tokens, relPath) {
   let i = 0
   while (i < tokens.length) {
     const code = tokens[i]
@@ -27,6 +21,30 @@ async function statusOf(repoPath, base, relPath) {
       i += 2
     }
   }
+  return null
+}
+
+async function statusOf(repoPath, base, relPath) {
+  // Cheap path first: a diff restricted to this one pathspec is correct for
+  // every status except a rename, because rename detection needs the old
+  // path in the diffed set too. 'M', 'D', 'C' and a directly-reported 'R'
+  // are trustworthy straight from this restricted diff.
+  const restricted = await gitTry(repoPath, [
+    'diff', '--name-status', '-z', '--find-renames', base, '--', relPath
+  ])
+  const restrictedTokens = (restricted ?? '').split('\0').filter((token) => token !== '')
+  const restrictedResult = parseNameStatus(restrictedTokens, relPath)
+  if (restrictedResult && restrictedResult.status !== 'A') return restrictedResult
+
+  // 'A' or no record at all is exactly what a hidden rename looks like from
+  // the restricted diff, so only now pay for the expensive whole-tree diff
+  // that lets git pair the old and new path. Use git, not gitTry: if this
+  // overflows maxBuffer or otherwise fails, surfacing the error beats
+  // silently falling through to a wrong status below.
+  const full = await git(repoPath, ['diff', '--name-status', '-z', '--find-renames', base])
+  const fullTokens = full.split('\0').filter((token) => token !== '')
+  const fullResult = parseNameStatus(fullTokens, relPath)
+  if (fullResult) return fullResult
 
   const tracked = await gitTry(repoPath, ['ls-files', '--error-unmatch', '--', relPath])
   return { status: tracked ? 'M' : '?', oldPath: null }
@@ -77,9 +95,9 @@ export async function fileLines(repoPath, base, relPath, { maxFileBytes }) {
 
   if (status === '?') return uniform(relPath, oldPath, status, texts, 'added')
 
-  // Same rename-detection constraint as statusOf: without the old path in
-  // the diffed set, git can't pair a rename and reports the whole file as
-  // added.
+  // Must keep --find-renames identical to statusOf's calls: a mismatch here
+  // would let one call detect a rename the other misses and reinstate the
+  // whole-file-orange bug.
   const pathspec = oldPath ? [oldPath, relPath] : [relPath]
   const diff = await git(repoPath, ['diff', '-U0', '--find-renames', base, '--', ...pathspec])
   const { addedLines, deletions } = parseHunks(diff)
