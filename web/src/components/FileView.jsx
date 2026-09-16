@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { buildRows } from '../rows.js'
 
@@ -54,6 +54,10 @@ export default function FileView({ view, lineHeight }) {
     estimateSize: () => lineHeight,
     overscan: 30
   })
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+  }, [view?.path])
 
   if (!view) return <Stub>Select a file</Stub>
 

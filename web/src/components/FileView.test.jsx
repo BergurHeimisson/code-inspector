@@ -89,4 +89,19 @@ describe('FileView', () => {
     expect(rowEl.style.height).toBe('28px')
     expect(rowEl.style.lineHeight).toBe('28px')
   })
+
+  it('sizes a deletion row from a non-default lineHeight prop', () => {
+    render(<FileView view={view({ deletions: [{ after: 1, count: 2 }] })} lineHeight={28} />)
+    const rowEl = screen.getByText('2 lines deleted').closest('div')
+    expect(rowEl.style.height).toBe('28px')
+  })
+
+  it('resets scroll position when the viewed file changes', () => {
+    const { container, rerender } = render(<FileView view={view()} lineHeight={20} />)
+    const scrollEl = container.querySelector('.overflow-auto')
+    scrollEl.scrollTop = 500
+
+    rerender(<FileView view={view({ path: 'src/b.js' })} lineHeight={20} />)
+    expect(container.querySelector('.overflow-auto').scrollTop).toBe(0)
+  })
 })
