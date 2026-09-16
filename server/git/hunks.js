@@ -13,7 +13,7 @@ export function parseHunks(diffText) {
     const newCount = match[4] === undefined ? 1 : Number(match[4])
 
     if (newCount === 0) {
-      if (oldCount > 0) deletions.push({ after: newStart, count: oldCount })
+      deletions.push({ after: newStart, count: oldCount })
       continue
     }
 
