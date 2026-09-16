@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 import FileView from './FileView.jsx'
@@ -15,7 +15,49 @@ beforeAll(() => {
   }
   Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 800 })
   Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 600 })
+
+  // jsdom also leaves clientHeight/scrollHeight at 0 regardless of inline
+  // styles (no layout engine), and @tanstack/virtual-core clamps every
+  // scrollToIndex target to `scrollHeight - clientHeight`. Left unpatched,
+  // every jump silently clamps to 0 and a scroll-assertion test can't tell a
+  // working jump from the reported bug — both look like { top: 0 }. clientHeight
+  // mirrors the fixed viewport; scrollHeight reads the virtualiser's own sizer
+  // div (its first child, given the height it sets from getTotalSize()).
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 600 })
+  Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      const child = this.firstElementChild
+      const childHeight = child && parseFloat(child.style.height)
+      return Number.isFinite(childHeight) ? childHeight : 600
+    }
+  })
+
+  // This jsdom build has no Element.prototype.scrollTo at all (verified: reading
+  // it is `undefined`, not a stub), and @tanstack/virtual-core's scroll adapter
+  // calls `scrollElement.scrollTo?.(...)` — so without this, a jumpChange call
+  // silently no-ops and no test can ever observe whether a scroll was requested.
+  // Implement it the way a real scrollable element would: write the offset to
+  // scrollTop.
+  if (!Element.prototype.scrollTo) {
+    Element.prototype.scrollTo = function scrollTo(options) {
+      if (typeof options !== 'object' || options === null) return
+      if (typeof options.top === 'number') this.scrollTop = options.top
+      if (typeof options.left === 'number') this.scrollLeft = options.left
+    }
+  }
 })
+
+// Mirrors @tanstack/virtual-core's getOffsetForAlignment for align: 'center'
+// with our fixed-size rows (estimateSize is a constant lineHeight, so every
+// row's start is index * lineHeight): toOffset = itemStart + (itemSize -
+// viewport) / 2, clamped to [0, totalSize - viewport]. Used to assert
+// scrollTo was invoked for the RIGHT target, not just invoked at all.
+const expectedOffset = (index, rowCount, lineHeight = 20, viewport = 600) => {
+  const raw = index * lineHeight + (lineHeight - viewport) / 2
+  const maxOffset = Math.max(rowCount * lineHeight - viewport, 0)
+  return Math.max(Math.min(maxOffset, raw), 0)
+}
 
 const view = (overrides = {}) => ({
   path: 'src/a.js',
@@ -160,6 +202,95 @@ describe('FileView', () => {
 
       rerender(<FileView ref={ref} view={bigView('src/b.js', 2000, [10, 20, 30])} lineHeight={20} />)
       expect(ref.current.jumpChange(1)).toBe(9)
+    })
+  })
+
+  // Regression coverage, not a red/green demonstration: `git log` shows this
+  // feature was broken and shipped broken twice because every prior test
+  // asserted only jumpChange's return value, never that a scroll was actually
+  // requested. These assert against the scroll mechanism itself so a future
+  // regression that leaves the return value correct but the view unmoved
+  // (the exact shape of the bug that shipped) fails here.
+  describe('jumpChange scroll mechanism', () => {
+    let scrollToSpy
+
+    beforeEach(() => {
+      scrollToSpy = vi.spyOn(Element.prototype, 'scrollTo')
+    })
+
+    afterEach(() => {
+      scrollToSpy.mockRestore()
+    })
+
+    it('n from an unset cursor scrolls to the first group, and a second n scrolls to the second', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [100, 200])} lineHeight={20} />)
+      // The virtualizer's own mount-time measurement can issue a scroll
+      // adjustment unrelated to jumpChange; only count calls from here on.
+      scrollToSpy.mockClear()
+
+      ref.current.jumpChange(1)
+      expect(scrollToSpy).toHaveBeenCalledTimes(1)
+      expect(scrollToSpy.mock.calls[0][0]).toMatchObject({ top: expectedOffset(99, 2000) })
+
+      ref.current.jumpChange(1)
+      expect(scrollToSpy).toHaveBeenCalledTimes(2)
+      const [firstCall, secondCall] = scrollToSpy.mock.calls
+      expect(secondCall[0]).toMatchObject({ top: expectedOffset(199, 2000) })
+      // The heart of the regression: two presses must target two different
+      // offsets. A cursor stuck resolving to the same group every time (the
+      // bug as reported) would pass on return value alone but fail here.
+      expect(secondCall[0].top).not.toBe(firstCall[0].top)
+    })
+
+    it('p from an unset cursor scrolls to the last group', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [100, 200])} lineHeight={20} />)
+      scrollToSpy.mockClear()
+
+      ref.current.jumpChange(-1)
+      expect(scrollToSpy).toHaveBeenCalledTimes(1)
+      expect(scrollToSpy.mock.calls[0][0]).toMatchObject({ top: expectedOffset(199, 2000) })
+    })
+
+    it('wraps scroll targets at both ends', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [100, 200])} lineHeight={20} />)
+      scrollToSpy.mockClear()
+
+      ref.current.jumpChange(1) // group 0 (row 99)
+      ref.current.jumpChange(1) // group 1 (row 199)
+      ref.current.jumpChange(1) // wraps back to group 0
+      expect(scrollToSpy).toHaveBeenCalledTimes(3)
+      expect(scrollToSpy.mock.calls[2][0]).toMatchObject({ top: expectedOffset(99, 2000) })
+
+      ref.current.jumpChange(-1) // wraps to group 1
+      expect(scrollToSpy).toHaveBeenCalledTimes(4)
+      expect(scrollToSpy.mock.calls[3][0]).toMatchObject({ top: expectedOffset(199, 2000) })
+    })
+
+    it('invokes no scroll at all for a file with no changes', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 50, [])} lineHeight={20} />)
+      scrollToSpy.mockClear()
+
+      expect(ref.current.jumpChange(1)).toBeNull()
+      expect(scrollToSpy).not.toHaveBeenCalled()
+    })
+
+    it('scrolls to the new file\'s first group on the first n after switching files', () => {
+      const ref = createRef()
+      const { rerender } = render(
+        <FileView ref={ref} view={bigView('src/a.js', 2000, [50, 150])} lineHeight={20} />
+      )
+      ref.current.jumpChange(-1) // last group of a.js, row 149
+      scrollToSpy.mockClear()
+
+      rerender(<FileView ref={ref} view={bigView('src/b.js', 2000, [10, 20, 30])} lineHeight={20} />)
+      ref.current.jumpChange(1)
+
+      expect(scrollToSpy).toHaveBeenCalledTimes(1)
+      expect(scrollToSpy.mock.calls[0][0]).toMatchObject({ top: expectedOffset(9, 2000) })
     })
   })
 
