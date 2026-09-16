@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
-import { applyTheme, resolveTheme } from './theme.js'
+import { applyTheme, resolveTheme, resolveScheme } from './theme.js'
 import { useKeyboard } from './useKeyboard.js'
 import Header from './components/Header.jsx'
 import FileTree from './components/FileTree.jsx'
@@ -10,6 +10,7 @@ import ProjectPicker from './components/ProjectPicker.jsx'
 export default function App() {
   const [config, setConfig] = useState(null)
   const [theme, setTheme] = useState('dark')
+  const [scheme, setScheme] = useState('amber')
   const [recents, setRecents] = useState([])
   const [paneWidth, setPaneWidth] = useState(280)
   const [root, setRoot] = useState(null)
@@ -32,8 +33,13 @@ export default function App() {
         setPaneWidth(state.paneWidth ?? 280)
 
         const active = resolveTheme(loadedConfig, state)
+        const activeScheme = resolveScheme(loadedConfig, state)
         setTheme(active)
-        applyTheme(loadedConfig.themes[active], active)
+        setScheme(activeScheme)
+        applyTheme(
+          { ...loadedConfig.themes[active], ...loadedConfig.schemes?.[activeScheme]?.[active] },
+          active
+        )
 
         if (initial.path) {
           api
@@ -118,9 +124,18 @@ export default function App() {
   const toggleTheme = useCallback(() => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    if (config) applyTheme(config.themes[next], next)
+    if (config) applyTheme({ ...config.themes[next], ...config.schemes?.[scheme]?.[next] }, next)
     api.saveState({ theme: next }).catch(() => {})
-  }, [theme, config])
+  }, [theme, scheme, config])
+
+  const changeScheme = useCallback(
+    (next) => {
+      setScheme(next)
+      if (config) applyTheme({ ...config.themes[theme], ...config.schemes?.[next]?.[theme] }, theme)
+      api.saveState({ scheme: next }).catch(() => {})
+    },
+    [theme, config]
+  )
 
   const step = useCallback(
     (delta) => {
@@ -155,10 +170,13 @@ export default function App() {
         project={project}
         range={range}
         theme={theme}
+        scheme={scheme}
+        schemes={Object.keys(config?.schemes ?? {})}
         onRangeChange={setRange}
         onRefresh={refresh}
         onSwitchProject={() => setPickerOpen(true)}
         onToggleTheme={toggleTheme}
+        onSchemeChange={changeScheme}
       />
 
       {error && <div className="border-b border-border px-4 py-2 text-sm text-deleted">{error}</div>}

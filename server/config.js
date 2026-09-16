@@ -6,6 +6,23 @@ export const DEFAULT_CONFIG = {
   maxFileBytes: 2097152,
   lineHeight: 20,
   tint: { added: 45, unchanged: 14, deleted: 40 },
+  defaultScheme: 'amber',
+  // Each scheme needs its own dark and light variant because a colour tuned
+  // for a near-black surface is wrong on white.
+  schemes: {
+    amber: {
+      dark: { added: '#d98a30', unchanged: '#2f6b4a', deleted: '#8a3030' },
+      light: { added: '#b35c00', unchanged: '#1c6b3f', deleted: '#a11a1a' }
+    },
+    magenta: {
+      dark: { added: '#ff2fd0', unchanged: '#2f6b6b', deleted: '#8a3030' },
+      light: { added: '#b3008f', unchanged: '#1c6b6b', deleted: '#a11a1a' }
+    },
+    safe: {
+      dark: { added: '#3b9dff', unchanged: '#6b6b2f', deleted: '#ff8c00' },
+      light: { added: '#0b62b3', unchanged: '#5c5c1f', deleted: '#b35c00' }
+    }
+  },
   themes: {
     dark: {
       surface: '#1e1f29',

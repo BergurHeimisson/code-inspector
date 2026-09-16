@@ -94,6 +94,29 @@ describe('loadConfig', () => {
     expect(config.tint.deleted).toBe(DEFAULT_CONFIG.tint.deleted)
   })
 
+  it('exposes all three default schemes', async () => {
+    const { loadConfig, DEFAULT_CONFIG } = await import('./config.js')
+    const config = await loadConfig()
+    expect(Object.keys(config.schemes).sort()).toEqual(['amber', 'magenta', 'safe'])
+    expect(config.schemes).toEqual(DEFAULT_CONFIG.schemes)
+    expect(config.defaultScheme).toBe('amber')
+  })
+
+  it('merges a partial scheme override, leaving the rest of that scheme at its defaults', async () => {
+    await writeFile(
+      join(dir, 'config.json'),
+      JSON.stringify({ schemes: { magenta: { dark: { added: '#00ff00' } } } })
+    )
+    const { loadConfig, DEFAULT_CONFIG } = await import('./config.js')
+    const config = await loadConfig()
+
+    expect(config.schemes.magenta.dark.added).toBe('#00ff00')
+    expect(config.schemes.magenta.dark.unchanged).toBe(DEFAULT_CONFIG.schemes.magenta.dark.unchanged)
+    expect(config.schemes.magenta.light).toEqual(DEFAULT_CONFIG.schemes.magenta.light)
+    expect(config.schemes.amber).toEqual(DEFAULT_CONFIG.schemes.amber)
+    expect(config.schemes.safe).toEqual(DEFAULT_CONFIG.schemes.safe)
+  })
+
   it('preserves an unknown key not present in the defaults', async () => {
     await writeFile(join(dir, 'config.json'), JSON.stringify({ futureFlag: true }))
     const { loadConfig } = await import('./config.js')
