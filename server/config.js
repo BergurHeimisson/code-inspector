@@ -54,7 +54,7 @@ function merge(defaults, override) {
 export async function loadConfig() {
   const file = CONFIG_FILE()
   try {
-    return merge(DEFAULT_CONFIG, JSON.parse(await readFile(file, 'utf8')))
+    return structuredClone(merge(DEFAULT_CONFIG, JSON.parse(await readFile(file, 'utf8'))))
   } catch (error) {
     if (error.code === 'ENOENT') {
       try {
