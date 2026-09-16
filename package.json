@@ -1,6 +1,24 @@
 {
   "name": "code-inspector",
   "version": "0.1.0",
+  "description": "A local web UI for reviewing everything changed on the current branch of a git repository, with changed lines tinted in the full file.",
+  "license": "MIT",
+  "author": "Bergur Heimisson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BergurHeimisson/code-inspector.git"
+  },
+  "homepage": "https://github.com/BergurHeimisson/code-inspector#readme",
+  "keywords": [
+    "git",
+    "diff",
+    "code-review",
+    "cli",
+    "local"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "private": true,
   "type": "module",
   "bin": {

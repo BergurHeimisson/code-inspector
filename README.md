@@ -4,11 +4,20 @@ A local web UI for reviewing everything changed on the current branch of a git
 repository. File tree on the left, full file content on the right with changed
 lines tinted.
 
+Diff tools show you the hunks. This shows you the whole file, with the added,
+changed and deleted lines tinted in place, so a change is always read in the
+context it lives in.
+
+Requires Node 20+ and git. Runs entirely on your machine; nothing is uploaded.
+
 ## Install
 
     ./install.sh
 
-Links `code-inspector` into `/usr/local/bin`.
+Builds the app and symlinks `code-inspector` into `~/.local/bin`, which needs no
+password. `./install.sh --system` links into `/usr/local/bin` instead and asks
+for sudo. The script warns if another `code-inspector` earlier in your PATH
+would shadow the new one.
 
 ## Use
 
@@ -50,3 +59,7 @@ project, the recent list and the theme choice.
 
     npm run dev     # vite on 5173, api on 5174
     npm test
+
+## License
+
+MIT — see [LICENSE](LICENSE).
