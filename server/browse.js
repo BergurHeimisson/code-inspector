@@ -52,6 +52,7 @@ export async function listDirectory(requestedPath, { home = homedir() } = {}) {
   return {
     path: resolved,
     parent: resolved === realHome ? null : dirname(resolved),
+    isGitRepo: await isGitRepo(resolved),
     entries
   }
 }

@@ -74,6 +74,15 @@ export default function ProjectPicker({ open, recents, onOpen, onClose }) {
             <ArrowUp aria-hidden="true" className="size-4" />
           </button>
           <span className="truncate font-mono text-xs opacity-70">{listing?.path ?? ''}</span>
+          <button
+            type="button"
+            aria-label="Open this folder"
+            disabled={!listing?.isGitRepo}
+            onClick={() => onOpen(listing.path)}
+            className="ml-auto shrink-0 rounded border border-text bg-text/10 px-2 py-1 text-[11px] font-semibold text-text hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30"
+          >
+            Open this folder
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">

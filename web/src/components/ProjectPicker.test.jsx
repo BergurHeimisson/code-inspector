@@ -11,6 +11,7 @@ vi.mock('../api.js', () => ({
 const listing = {
   path: '/home/me/ai_code',
   parent: '/home/me',
+  isGitRepo: false,
   entries: [
     { name: 'jetlog', path: '/home/me/ai_code/jetlog', isGitRepo: true },
     { name: 'notes', path: '/home/me/ai_code/notes', isGitRepo: false }
@@ -86,5 +87,38 @@ describe('ProjectPicker', () => {
     api.fsList.mockRejectedValue(new Error('Path is outside the home directory'))
     render(<ProjectPicker open recents={[]} onOpen={() => {}} onClose={() => {}} />)
     expect(await screen.findByText('Path is outside the home directory')).toBeInTheDocument()
+  })
+
+  it('opens the current folder when it is a git repository', async () => {
+    api.fsList.mockResolvedValue({ ...listing, isGitRepo: true })
+    const onOpen = vi.fn()
+    render(<ProjectPicker open recents={[]} onOpen={onOpen} onClose={() => {}} />)
+    await userEvent.click(await screen.findByLabelText('Open this folder'))
+    expect(onOpen).toHaveBeenCalledWith('/home/me/ai_code')
+  })
+
+  it('disables opening the current folder when it is not a git repository', async () => {
+    render(<ProjectPicker open recents={[]} onOpen={() => {}} onClose={() => {}} />)
+    expect(await screen.findByLabelText('Open this folder')).toBeDisabled()
+  })
+
+  it('lets the user select a repository they navigated into, even when none of its children are repositories', async () => {
+    // This is the trap: entries has no repos, but the current directory itself is one.
+    api.fsList.mockResolvedValue({
+      path: '/home/me/ai_code/code-inspector',
+      parent: '/home/me/ai_code',
+      isGitRepo: true,
+      entries: [
+        { name: 'bin', path: '/home/me/ai_code/code-inspector/bin', isGitRepo: false },
+        { name: 'server', path: '/home/me/ai_code/code-inspector/server', isGitRepo: false }
+      ]
+    })
+    const onOpen = vi.fn()
+    render(<ProjectPicker open recents={[]} onOpen={onOpen} onClose={() => {}} />)
+    await userEvent.click(await screen.findByText('bin'))
+    const openHere = await screen.findByLabelText('Open this folder')
+    expect(openHere).toBeEnabled()
+    await userEvent.click(openHere)
+    expect(onOpen).toHaveBeenCalledWith('/home/me/ai_code/code-inspector')
   })
 })
