@@ -20,6 +20,8 @@ async function isGitRepo(path) {
 }
 
 export async function listDirectory(requestedPath, { home = homedir() } = {}) {
+  if (requestedPath === '~') requestedPath = home
+
   const realHome = await realpath(home)
 
   let resolved

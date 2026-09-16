@@ -68,4 +68,9 @@ describe('listDirectory', () => {
       await rm(sibling, { recursive: true, force: true })
     }
   })
+
+  it('expands a tilde to the home directory', async () => {
+    const listing = await listDirectory('~', { home })
+    expect(listing.path).toBe(home)
+  })
 })
