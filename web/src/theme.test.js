@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { applyTheme, resolveTheme } from './theme.js'
+import { applyTheme, resolveTheme, resolveScheme } from './theme.js'
 
 describe('applyTheme', () => {
   let root
@@ -71,5 +71,35 @@ describe('resolveTheme', () => {
 
   it('falls back to dark when nothing is set', () => {
     expect(resolveTheme({}, {})).toBe('dark')
+  })
+})
+
+describe('resolveScheme', () => {
+  const config = {
+    defaultScheme: 'amber',
+    schemes: {
+      amber: { dark: {}, light: {} },
+      magenta: { dark: {}, light: {} }
+    }
+  }
+
+  it('prefers the remembered scheme', () => {
+    expect(resolveScheme(config, { scheme: 'magenta' })).toBe('magenta')
+  })
+
+  it('falls back to the config default when nothing is remembered', () => {
+    expect(resolveScheme(config, {})).toBe('amber')
+  })
+
+  it('falls back to the config default when the remembered scheme no longer exists', () => {
+    expect(resolveScheme(config, { scheme: 'deleted-scheme' })).toBe('amber')
+  })
+
+  it('falls back to amber when the config has no defaultScheme', () => {
+    expect(resolveScheme({ schemes: config.schemes }, {})).toBe('amber')
+  })
+
+  it('falls back to amber when the config has no schemes block at all', () => {
+    expect(resolveScheme({}, {})).toBe('amber')
   })
 })

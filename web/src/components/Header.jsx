@@ -95,10 +95,13 @@ export default function Header({
   project,
   range,
   theme,
+  scheme,
+  schemes = [],
   onRangeChange,
   onRefresh,
   onSwitchProject,
-  onToggleTheme
+  onToggleTheme,
+  onSchemeChange
 }) {
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
 
@@ -141,6 +144,19 @@ export default function Header({
       {range.mode === 'ref' && <RefInput refValue={range.ref} onRangeChange={onRangeChange} />}
 
       <div className="ml-auto flex items-center gap-1">
+        <select
+          aria-label="Colour scheme"
+          value={scheme}
+          onChange={(event) => onSchemeChange(event.target.value)}
+          className="rounded border border-border bg-surface px-2 py-1 text-xs text-text"
+        >
+          {schemes.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
         <IconButton label="Refresh" onClick={onRefresh}>
           <RefreshCw aria-hidden="true" className="size-4" />
         </IconButton>

@@ -23,7 +23,8 @@ describe('state', () => {
       lastProject: null,
       recents: [],
       paneWidth: 280,
-      theme: null
+      theme: null,
+      scheme: null
     })
   })
 
