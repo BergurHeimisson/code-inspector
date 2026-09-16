@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApp, parseRange } from './app.js'
+import { createApp } from './app.js'
+import { parseRange } from './routes/api.js'
 import { makeRepo } from '../tests/helpers/repo.js'
 
 let repo

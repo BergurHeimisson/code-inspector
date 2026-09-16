@@ -1,7 +1,5 @@
 import express from 'express'
-import { apiRouter, parseRange } from './routes/api.js'
-
-export { parseRange }
+import { apiRouter } from './routes/api.js'
 
 function statusFor(error) {
   if (error.status) return error.status

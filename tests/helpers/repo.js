@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, rm, mkdir, writeFile, realpath } from 'node:fs/promises'
+import { mkdtemp, rm, realpath } from 'node:fs/promises'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

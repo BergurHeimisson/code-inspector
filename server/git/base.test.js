@@ -57,7 +57,7 @@ describe('resolveBase auto', () => {
   it('tier 3: falls back to origin/main when no upstream or origin/HEAD', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')
-    const commitRoot = repo.commit('commit-root')
+    repo.commit('commit-root')
     repo.write('b.txt', 'two\n')
     const commitMain = repo.commit('commit-main')
     repo.write('c.txt', 'three\n')
@@ -80,7 +80,7 @@ describe('resolveBase auto', () => {
   it('tier 4: falls back to origin/master when no main, HEAD, or @{upstream}', async () => {
     repo = await makeRepo()
     repo.write('a.txt', 'one\n')
-    const commitRoot = repo.commit('commit-root')
+    repo.commit('commit-root')
     repo.write('b.txt', 'two\n')
     const commitMaster = repo.commit('commit-master')
     repo.write('c.txt', 'three\n')
