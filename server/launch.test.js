@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeRepo } from '../tests/helpers/repo.js'
@@ -62,10 +62,20 @@ describe('initialProject', () => {
   })
 })
 
-describe('tailnetUrl', () => {
+describe('tailnetAddress', () => {
   it('returns null rather than throwing when Tailscale is absent', async () => {
-    const { tailnetUrl } = await import('./launch.js')
-    const url = await tailnetUrl(5174, { binary: '/nonexistent/tailscale' })
-    expect(url).toBeNull()
+    const { tailnetAddress } = await import('./launch.js')
+    expect(await tailnetAddress({ binary: '/nonexistent/tailscale' })).toBeNull()
+  })
+
+  it('returns the first address the CLI reports', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'ci-ts-'))
+    const fake = join(dir, 'tailscale')
+    await writeFile(fake, '#!/bin/sh\nprintf "100.64.0.1\\n100.64.0.2\\n"\n', { mode: 0o755 })
+
+    const { tailnetAddress } = await import('./launch.js')
+    expect(await tailnetAddress({ binary: fake })).toBe('100.64.0.1')
+
+    await rm(dir, { recursive: true, force: true })
   })
 })

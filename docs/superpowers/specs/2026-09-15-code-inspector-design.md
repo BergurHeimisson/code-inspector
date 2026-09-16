@@ -74,9 +74,11 @@ code-inspector/
   starts the server on a free port, serves the prebuilt bundle, and opens the
   browser. Startup prints the `localhost` URL, and the tailnet URL only when
   `--tailnet` was passed.
-- **Binding:** `127.0.0.1` by default. `--tailnet` binds every interface so the
-  printed tailnet URL is actually reachable; it is opt-in because the app serves
-  the full contents of the open repository with no authentication.
+- **Binding:** `127.0.0.1` by default. `--tailnet` adds a second socket on the
+  Tailscale address itself — not `0.0.0.0`, which would also expose the port to
+  whatever local network the machine is on — so the printed tailnet URL is
+  reachable. It is opt-in because the app serves the full contents of the open
+  repository with no authentication.
 
 ### Why not the alternatives
 

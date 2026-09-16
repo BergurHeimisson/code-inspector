@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { parseOptions } from './options.js'
 
 describe('parseOptions', () => {
-  it('defaults to loopback with no tailnet line', () => {
-    expect(parseOptions([])).toMatchObject({ host: '127.0.0.1', tailnet: false })
+  it('stays off the tailnet by default', () => {
+    expect(parseOptions([])).toMatchObject({ tailnet: false })
   })
 
-  it('binds every interface when --tailnet is given', () => {
-    expect(parseOptions(['--tailnet'])).toMatchObject({ host: '0.0.0.0', tailnet: true })
+  it('requests the tailnet when --tailnet is given', () => {
+    expect(parseOptions(['--tailnet'])).toMatchObject({ tailnet: true })
   })
 
   it('opens the browser unless --no-open or --dev is given', () => {
@@ -22,6 +22,6 @@ describe('parseOptions', () => {
   })
 
   it('serves the tailnet from the dev server too', () => {
-    expect(parseOptions(['--dev', '--tailnet'])).toMatchObject({ host: '0.0.0.0', port: 5174 })
+    expect(parseOptions(['--dev', '--tailnet'])).toMatchObject({ tailnet: true, port: 5174 })
   })
 })

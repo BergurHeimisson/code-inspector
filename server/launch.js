@@ -18,11 +18,10 @@ export async function initialProject(cwd) {
   return remembered ?? null
 }
 
-export async function tailnetUrl(port, { binary = TAILSCALE_BINARY } = {}) {
+export async function tailnetAddress({ binary = TAILSCALE_BINARY } = {}) {
   try {
     const { stdout } = await execFileAsync(binary, ['ip', '-4'], { encoding: 'utf8' })
-    const address = stdout.trim().split('\n')[0]
-    return address ? `http://${address}:${port}` : null
+    return stdout.trim().split('\n')[0] || null
   } catch {
     return null
   }
