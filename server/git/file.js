@@ -2,26 +2,23 @@ import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { git, gitTry } from './run.js'
 import { parseHunks } from './hunks.js'
+import { parseNameStatusZ } from './parse.js'
 
 function toLines(text) {
   const body = text.endsWith('\n') ? text.slice(0, -1) : text
   return body === '' ? [] : body.split('\n')
 }
 
-function parseNameStatus(tokens, relPath) {
-  let i = 0
-  while (i < tokens.length) {
-    const code = tokens[i]
-    if (code.startsWith('R') || code.startsWith('C')) {
-      const [oldPath, newPath] = [tokens[i + 1], tokens[i + 2]]
-      if (newPath === relPath) return { status: 'R', oldPath }
-      i += 3
-    } else {
-      if (tokens[i + 1] === relPath) return { status: code[0], oldPath: null }
-      i += 2
-    }
+function findStatus(text, relPath) {
+  // Renames and copies both render as 'R' with an oldPath: FileView shows
+  // "renamed from …" and has no separate copy state, so the collapse here
+  // is deliberate even though the shared parser reports 'C' distinctly.
+  const record = parseNameStatusZ(text).find((r) => r.path === relPath)
+  if (!record) return null
+  if (record.status === 'R' || record.status === 'C') {
+    return { status: 'R', oldPath: record.oldPath }
   }
-  return null
+  return { status: record.status, oldPath: null }
 }
 
 async function statusOf(repoPath, base, relPath) {
@@ -32,8 +29,7 @@ async function statusOf(repoPath, base, relPath) {
   const restricted = await gitTry(repoPath, [
     'diff', '--name-status', '-z', '--find-renames', base, '--', relPath
   ])
-  const restrictedTokens = (restricted ?? '').split('\0').filter((token) => token !== '')
-  const restrictedResult = parseNameStatus(restrictedTokens, relPath)
+  const restrictedResult = findStatus(restricted ?? '', relPath)
   if (restrictedResult && restrictedResult.status !== 'A') return restrictedResult
 
   // 'A' or no record at all is exactly what a hidden rename looks like from
@@ -42,8 +38,7 @@ async function statusOf(repoPath, base, relPath) {
   // overflows maxBuffer or otherwise fails, surfacing the error beats
   // silently falling through to a wrong status below.
   const full = await git(repoPath, ['diff', '--name-status', '-z', '--find-renames', base])
-  const fullTokens = full.split('\0').filter((token) => token !== '')
-  const fullResult = parseNameStatus(fullTokens, relPath)
+  const fullResult = findStatus(full, relPath)
   if (fullResult) return fullResult
 
   const tracked = await gitTry(repoPath, ['ls-files', '--error-unmatch', '--', relPath])
