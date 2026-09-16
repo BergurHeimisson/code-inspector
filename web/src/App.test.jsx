@@ -41,6 +41,17 @@ const CONFIG = {
   maxFileBytes: 2097152,
   lineHeight: 20,
   tint: { added: 70, unchanged: 14, deleted: 40 },
+  defaultScheme: 'amber',
+  schemes: {
+    amber: {
+      dark: { added: '#d98a30', unchanged: '#2f6b4a', deleted: '#8a3030' },
+      light: { added: '#b35c00', unchanged: '#1c6b3f', deleted: '#a11a1a' }
+    },
+    magenta: {
+      dark: { added: '#ff2fd0', unchanged: '#2f6b6b', deleted: '#8a3030' },
+      light: { added: '#b3008f', unchanged: '#1c6b6b', deleted: '#a11a1a' }
+    }
+  },
   themes: {
     dark: {
       surface: '#1e1f29',
@@ -86,7 +97,13 @@ const FILE = {
 beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset?.()
   api.config.mockResolvedValue(CONFIG)
-  api.state.mockResolvedValue({ lastProject: null, recents: [], paneWidth: 280, theme: null })
+  api.state.mockResolvedValue({
+    lastProject: null,
+    recents: [],
+    paneWidth: 280,
+    theme: null,
+    scheme: null
+  })
   api.initial.mockResolvedValue({ path: '/repos/jetlog' })
   api.project.mockResolvedValue(PROJECT)
   api.changes.mockResolvedValue(CHANGES)
@@ -182,6 +199,57 @@ describe('App', () => {
         JSON.stringify({ added: 45, unchanged: 14, deleted: 40 })
       )
     )
+  })
+
+  it('applies the scheme colours over the theme, keeping surface/text/border from the theme', async () => {
+    render(<App />)
+    await screen.findByText('a.js')
+    await waitFor(() => {
+      const style = document.documentElement.style
+      expect(style.getPropertyValue('--color-added')).toBe(CONFIG.schemes.amber.dark.added)
+      expect(style.getPropertyValue('--color-unchanged')).toBe(CONFIG.schemes.amber.dark.unchanged)
+      expect(style.getPropertyValue('--color-deleted')).toBe(CONFIG.schemes.amber.dark.deleted)
+      expect(style.getPropertyValue('--color-surface')).toBe(CONFIG.themes.dark.surface)
+      expect(style.getPropertyValue('--color-text')).toBe(CONFIG.themes.dark.text)
+      expect(style.getPropertyValue('--color-border')).toBe(CONFIG.themes.dark.border)
+    })
+  })
+
+  it('switching scheme re-applies tokens and persists the choice', async () => {
+    render(<App />)
+    await screen.findByText('a.js')
+    await userEvent.selectOptions(screen.getByLabelText('Colour scheme'), 'magenta')
+
+    await waitFor(() => expect(api.saveState).toHaveBeenCalledWith({ scheme: 'magenta' }))
+    await waitFor(() =>
+      expect(document.documentElement.style.getPropertyValue('--color-added')).toBe(
+        CONFIG.schemes.magenta.dark.added
+      )
+    )
+  })
+
+  it('falls back to the default scheme when state names one that no longer exists', async () => {
+    api.state.mockResolvedValue({
+      lastProject: null,
+      recents: [],
+      paneWidth: 280,
+      theme: null,
+      scheme: 'deleted-scheme'
+    })
+    render(<App />)
+    await screen.findByText('a.js')
+    await waitFor(() =>
+      expect(document.documentElement.style.getPropertyValue('--color-added')).toBe(
+        CONFIG.schemes.amber.dark.added
+      )
+    )
+  })
+
+  it('still renders when the config has no schemes block', async () => {
+    const { schemes, defaultScheme, ...configWithoutSchemes } = CONFIG
+    api.config.mockResolvedValue(configWithoutSchemes)
+    render(<App />)
+    expect(await screen.findByText('a.js')).toBeInTheDocument()
   })
 
   it('shows an error when loading the project fails', async () => {
