@@ -150,4 +150,74 @@ describe('App', () => {
     render(<App />)
     expect(await screen.findByText('Not a git repository: /repos/jetlog')).toBeInTheDocument()
   })
+
+  it('keeps a non-first file selected when r is pressed', async () => {
+    render(<App />)
+    await userEvent.click(await screen.findByText('b.js'))
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/b.js', { mode: 'auto' })
+    )
+
+    await userEvent.keyboard('r')
+
+    await waitFor(() => expect(api.changes).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/b.js', { mode: 'auto' })
+    )
+  })
+
+  it('falls back to the first file when r is pressed after the selected file vanished', async () => {
+    render(<App />)
+    await userEvent.click(await screen.findByText('b.js'))
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/b.js', { mode: 'auto' })
+    )
+
+    api.changes.mockResolvedValue({
+      ...CHANGES,
+      files: [{ path: 'src/a.js', oldPath: null, status: 'M', added: 2, removed: 1, binary: false }]
+    })
+
+    await userEvent.keyboard('r')
+
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/a.js', { mode: 'auto' })
+    )
+  })
+
+  it('lands on the first file when a range change produces a different file set', async () => {
+    render(<App />)
+    await screen.findByText('a.js')
+    await userEvent.click(await screen.findByText('b.js'))
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/b.js', { mode: 'auto' })
+    )
+
+    api.changes.mockResolvedValue({
+      ...CHANGES,
+      files: [{ path: 'src/c.js', oldPath: null, status: 'A', added: 3, removed: 0, binary: false }]
+    })
+
+    await userEvent.selectOptions(screen.getByLabelText('Change range'), 'worktree')
+
+    await waitFor(() =>
+      expect(api.file).toHaveBeenLastCalledWith('/repos/jetlog', 'src/c.js', { mode: 'worktree' })
+    )
+  })
+
+  it('clears the first project from the DOM when opening a second project fails', async () => {
+    render(<App />)
+    expect(await screen.findByText('jetlog')).toBeInTheDocument()
+    expect(await screen.findByText('a.js')).toBeInTheDocument()
+
+    api.project.mockRejectedValue(new Error('Not a git repository: /repos/other'))
+    await userEvent.click(screen.getByLabelText('Switch project'))
+    await userEvent.type(screen.getByLabelText('Project path'), '/repos/other')
+    await userEvent.click(screen.getByLabelText('Project path'))
+    await userEvent.keyboard('{Enter}')
+
+    expect(await screen.findByText('Not a git repository: /repos/other')).toBeInTheDocument()
+    expect(screen.queryByText('a.js')).not.toBeInTheDocument()
+    expect(screen.queryByText('jetlog')).not.toBeInTheDocument()
+  })
 })

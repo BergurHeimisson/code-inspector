@@ -57,11 +57,25 @@ export default function App() {
         if (cancelled) return
         setProject(loadedProject)
         setChanges(loadedChanges)
-        setSelected(loadedChanges.files[0]?.path ?? null)
+        setSelected((current) => {
+          // `r` retriggers this effect by giving `range` a new identity with
+          // the same contents, so a path that is still present after a
+          // refresh means nothing structural changed — keep the user's
+          // place instead of bouncing them back to the first file.
+          if (current && loadedChanges.files.some((file) => file.path === current)) {
+            return current
+          }
+          return loadedChanges.files[0]?.path ?? null
+        })
         setView(null)
       })
       .catch((problem) => {
-        if (!cancelled) setError(problem.message)
+        if (cancelled) return
+        setError(problem.message)
+        setProject(null)
+        setChanges(null)
+        setSelected(null)
+        setView(null)
       })
 
     return () => {
