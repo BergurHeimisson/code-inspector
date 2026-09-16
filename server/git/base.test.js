@@ -167,3 +167,17 @@ describe('resolveBase explicit modes', () => {
       .toEqual({ base: 'main', label: 'vs main' })
   })
 })
+
+describe('range labels', () => {
+  it('singularises a one-commit range', async () => {
+    const { resolveBase } = await import('./base.js')
+    const { base, label } = await resolveBase('/nowhere', { mode: 'commits', n: 1 })
+    expect(base).toBe('HEAD~1')
+    expect(label).toBe('last commit')
+  })
+
+  it('pluralises every other commit range', async () => {
+    const { resolveBase } = await import('./base.js')
+    expect((await resolveBase('/nowhere', { mode: 'commits', n: 3 })).label).toBe('last 3 commits')
+  })
+})

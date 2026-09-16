@@ -186,7 +186,7 @@ export default function App() {
           style={{ width: `${paneWidth}px` }}
           className="shrink-0 overflow-hidden border-r border-border"
         >
-          <FileTree files={files} selectedPath={selected} onSelect={setSelected} />
+          <FileTree files={files} range={range} selectedPath={selected} onSelect={setSelected} />
         </aside>
         <main className="min-w-0 flex-1">
           <FileView

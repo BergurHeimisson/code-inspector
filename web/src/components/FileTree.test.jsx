@@ -14,9 +14,19 @@ const file = (path, extra = {}) => ({
 })
 
 describe('FileTree', () => {
-  it('renders nothing but an empty note for no files', () => {
-    render(<FileTree files={[]} selectedPath={null} onSelect={() => {}} />)
+  it('explains an empty auto range rather than just saying no changes', () => {
+    render(<FileTree files={[]} range={{ mode: 'auto' }} selectedPath={null} onSelect={() => {}} />)
     expect(screen.getByText('No changes')).toBeInTheDocument()
+    expect(
+      screen.getByText(/nothing unpushed.*no local edits/i)
+    ).toBeInTheDocument()
+    expect(screen.getByText(/range dropdown/i)).toBeInTheDocument()
+  })
+
+  it('does not blame the branch when an explicit range is empty', () => {
+    render(<FileTree files={[]} range={{ mode: 'commits', n: 2 }} selectedPath={null} onSelect={() => {}} />)
+    expect(screen.getByText('No changes')).toBeInTheDocument()
+    expect(screen.queryByText(/nothing unpushed/i)).not.toBeInTheDocument()
   })
 
   it('renders directories and files', () => {

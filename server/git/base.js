@@ -40,7 +40,7 @@ export async function resolveBase(repoPath, range = { mode: 'auto' }) {
     case 'worktree':
       return { base: 'HEAD', label: 'working tree' }
     case 'commits':
-      return { base: `HEAD~${range.n}`, label: `last ${range.n} commits` }
+      return { base: `HEAD~${range.n}`, label: range.n === 1 ? 'last commit' : `last ${range.n} commits` }
     case 'ref':
       return { base: range.ref, label: `vs ${range.ref}` }
     default:

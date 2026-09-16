@@ -77,13 +77,23 @@ function Row(props) {
   return props.node.type === 'dir' ? <DirRow {...props} /> : <FileRow {...props} />
 }
 
-export default function FileTree({ files, selectedPath, onSelect }) {
+export default function FileTree({ files, range, selectedPath, onSelect }) {
   const tree = buildTree(files)
   const added = files.reduce((sum, f) => sum + f.added, 0)
   const removed = files.reduce((sum, f) => sum + f.removed, 0)
 
   if (files.length === 0) {
-    return <div className="p-4 text-sm opacity-60">No changes</div>
+    return (
+      <div className="p-4 text-sm opacity-60">
+        <div>No changes</div>
+        {range?.mode === 'auto' && (
+          <div className="mt-2">
+            Nothing unpushed on this branch and no local edits. Pick another range
+            in the range dropdown to look further back.
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
