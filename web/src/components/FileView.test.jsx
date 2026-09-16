@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 import FileView from './FileView.jsx'
 
@@ -94,6 +95,72 @@ describe('FileView', () => {
     render(<FileView view={view({ deletions: [{ after: 1, count: 2 }] })} lineHeight={28} />)
     const rowEl = screen.getByText('2 lines deleted').closest('div')
     expect(rowEl.style.height).toBe('28px')
+  })
+
+  // buildRows produces one row per line when there are no deletions, so a
+  // line's row index is its 1-based line number minus one.
+  const bigView = (path, total, addedLines) =>
+    view({
+      path,
+      lines: Array.from({ length: total }, (_, i) => ({
+        n: i + 1,
+        text: `l${i + 1}`,
+        state: addedLines.includes(i + 1) ? 'added' : 'unchanged'
+      }))
+    })
+
+  const deletedFileView = (total) =>
+    view({
+      status: 'D',
+      lines: Array.from({ length: total }, (_, i) => ({ n: i + 1, text: `l${i + 1}`, state: 'deleted' }))
+    })
+
+  describe('jumpChange navigation', () => {
+    it('reaches a change far outside the virtualised render window', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [1000])} lineHeight={20} />)
+      expect(ref.current.jumpChange(1)).toBe(999)
+    })
+
+    it('pressing n twice reaches the second change, not the first again', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [100, 200])} lineHeight={20} />)
+      expect(ref.current.jumpChange(1)).toBe(99)
+      expect(ref.current.jumpChange(1)).toBe(199)
+    })
+
+    it('reaches changes in a fully deleted file', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={deletedFileView(50)} lineHeight={20} />)
+      expect(ref.current.jumpChange(1)).toBe(0)
+    })
+
+    it('treats a consecutive changed block as a single stop', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 20, [5, 6, 7, 8, 9])} lineHeight={20} />)
+      expect(ref.current.jumpChange(1)).toBe(4)
+      // Only one group exists, so the next n wraps back to the same block
+      // rather than stepping to line 6 within it.
+      expect(ref.current.jumpChange(1)).toBe(4)
+    })
+
+    it('wraps from the last change back to the first', () => {
+      const ref = createRef()
+      render(<FileView ref={ref} view={bigView('src/a.js', 2000, [100, 200])} lineHeight={20} />)
+      expect(ref.current.jumpChange(-1)).toBe(199)
+      expect(ref.current.jumpChange(1)).toBe(99)
+    })
+
+    it('resets the cursor when the viewed file changes', () => {
+      const ref = createRef()
+      const { rerender } = render(
+        <FileView ref={ref} view={bigView('src/a.js', 2000, [50, 150])} lineHeight={20} />
+      )
+      expect(ref.current.jumpChange(-1)).toBe(149)
+
+      rerender(<FileView ref={ref} view={bigView('src/b.js', 2000, [10, 20, 30])} lineHeight={20} />)
+      expect(ref.current.jumpChange(1)).toBe(9)
+    })
   })
 
   it('resets scroll position when the viewed file changes', () => {

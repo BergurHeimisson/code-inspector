@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
 import { applyTheme, resolveTheme } from './theme.js'
 import { useKeyboard } from './useKeyboard.js'
@@ -20,6 +20,7 @@ export default function App() {
   const [range, setRange] = useState({ mode: 'auto' })
   const [pickerOpen, setPickerOpen] = useState(false)
   const [error, setError] = useState(null)
+  const fileViewRef = useRef(null)
 
   const files = changes?.files ?? []
 
@@ -132,10 +133,7 @@ export default function App() {
   )
 
   const jumpChange = useCallback((delta) => {
-    const marks = [...document.querySelectorAll('[data-state="added"]')]
-    if (marks.length === 0) return
-    const target = delta > 0 ? marks[0] : marks[marks.length - 1]
-    target.scrollIntoView({ block: 'center' })
+    fileViewRef.current?.jumpChange(delta)
   }, [])
 
   const handlers = useMemo(
@@ -173,7 +171,7 @@ export default function App() {
           <FileTree files={files} selectedPath={selected} onSelect={setSelected} />
         </aside>
         <main className="min-w-0 flex-1">
-          <FileView view={view} lineHeight={config?.lineHeight ?? 20} />
+          <FileView ref={fileViewRef} view={view} lineHeight={config?.lineHeight ?? 20} />
         </main>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { buildRows } from '../rows.js'
 
@@ -23,6 +23,18 @@ function DeletionRow({ count, lineHeight }) {
   )
 }
 
+// Consecutive changed rows are one navigation stop, not one per line.
+export function changeGroupStarts(rows) {
+  const starts = []
+  let inGroup = false
+  rows.forEach((row, index) => {
+    const changed = row.kind === 'deletion' || row.state === 'added' || row.state === 'deleted'
+    if (changed && !inGroup) starts.push(index)
+    inGroup = changed
+  })
+  return starts
+}
+
 function LineRow({ row, lineHeight }) {
   return (
     <div
@@ -41,12 +53,14 @@ function LineRow({ row, lineHeight }) {
   )
 }
 
-export default function FileView({ view, lineHeight }) {
+const FileView = forwardRef(function FileView({ view, lineHeight }, ref) {
   const scrollRef = useRef(null)
+  const cursorRef = useRef(-1)
   const rows = useMemo(
     () => (view ? buildRows(view.lines, view.deletions) : []),
     [view]
   )
+  const changeStarts = useMemo(() => changeGroupStarts(rows), [rows])
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -56,8 +70,25 @@ export default function FileView({ view, lineHeight }) {
   })
 
   useEffect(() => {
+    cursorRef.current = -1
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [view?.path])
+
+  useImperativeHandle(ref, () => ({
+    jumpChange(delta) {
+      const total = changeStarts.length
+      if (total === 0) return null
+
+      cursorRef.current =
+        cursorRef.current === -1
+          ? (delta > 0 ? 0 : total - 1)
+          : ((cursorRef.current + delta) % total + total) % total
+
+      const index = changeStarts[cursorRef.current]
+      virtualizer.scrollToIndex(index, { align: 'center' })
+      return index
+    }
+  }), [changeStarts, virtualizer])
 
   if (!view) return <Stub>Select a file</Stub>
 
@@ -101,4 +132,6 @@ export default function FileView({ view, lineHeight }) {
       )}
     </div>
   )
-}
+})
+
+export default FileView
