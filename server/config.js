@@ -5,6 +5,7 @@ export const DEFAULT_CONFIG = {
   defaultTheme: 'dark',
   maxFileBytes: 2097152,
   lineHeight: 20,
+  tint: { added: 45, unchanged: 14, deleted: 40 },
   themes: {
     dark: {
       surface: '#1e1f29',
