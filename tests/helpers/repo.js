@@ -10,7 +10,7 @@ export async function makeRepo() {
   // need the resolved form too.
   const dir = await realpath(await mkdtemp(join(tmpdir(), 'code-inspector-')))
   const run = (...args) =>
-    execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim()
+    execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
 
   run('init', '-b', 'main')
   run('config', 'user.email', 'test@example.com')

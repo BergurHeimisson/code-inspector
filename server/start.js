@@ -27,3 +27,12 @@ const server = app.listen(port, '127.0.0.1', async () => {
 
   if (shouldOpen) await open(local)
 })
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`code-inspector: port ${port} is already in use`)
+  } else {
+    console.error(`code-inspector: ${error.message}`)
+  }
+  process.exit(1)
+})
