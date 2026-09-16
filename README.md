@@ -29,13 +29,16 @@ would shadow the new one.
 The launch directory wins; outside a repository it reopens the last project, or
 offers a picker.
 
+Only files git tracks are listed. A new file shows up once you `git add` it, so
+scratch files and build leftovers stay out of the review.
+
 The server binds `127.0.0.1`, so it is reachable only from this machine. Passing
 `--tailnet` also binds your Tailscale address and prints that URL, which lets
 you read the diff from a phone or another laptop on your tailnet. Only the
 Tailscale address is added, so the port stays invisible to whatever local
-network you happen to be on. There is
-no authentication, so anything on the tailnet can then read the whole open
-repository — only use it on a tailnet you trust.
+network you happen to be on. There is no authentication, so anything on the
+tailnet can then read the whole open repository — only use it on a tailnet you
+trust.
 
 ### Range
 

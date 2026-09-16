@@ -103,8 +103,9 @@ uncommitted changes arrive together with no merging of two sources.
 
 ### File change list
 
-`git diff --numstat <base>` for tracked changes, plus `git status --porcelain`
-for untracked files.
+`git diff --numstat <base>`, which reports only what is tracked. Untracked
+files are not listed: a file has to be staged or committed before it appears,
+so scratch files in the working directory never clutter the review.
 
 ### Per-file line states
 
@@ -118,7 +119,7 @@ paired with the file's current bytes on disk. Every other line is
 
 Special cases:
 
-- **Untracked file** — every line `added`.
+- **Newly added file** — every line `added` (it must be staged to be listed).
 - **Deleted file** — content read from HEAD, every line `state: "deleted"`.
 - **Binary file** — listed in the tree, right pane renders a stub.
 - **File over `maxFileBytes`** (default 2 MB) — same stub treatment.
