@@ -139,6 +139,56 @@ describe('FileView', () => {
     expect(rowEl.style.height).toBe('28px')
   })
 
+  describe('tint', () => {
+    it('reflects a non-default tint value passed in for the added state', () => {
+      render(
+        <FileView
+          view={view()}
+          lineHeight={20}
+          tint={{ added: 70, unchanged: 14, deleted: 40 }}
+        />
+      )
+      const rowEl = screen.getByText('const b = 2').closest('[data-state]')
+      expect(rowEl.style.backgroundColor).toBe('color-mix(in srgb, var(--color-added) 70%, transparent)')
+    })
+
+    it('clamps a tint value above 100 down to 100', () => {
+      render(
+        <FileView
+          view={view()}
+          lineHeight={20}
+          tint={{ added: 150, unchanged: 14, deleted: 40 }}
+        />
+      )
+      const rowEl = screen.getByText('const b = 2').closest('[data-state]')
+      expect(rowEl.style.backgroundColor).toBe('color-mix(in srgb, var(--color-added) 100%, transparent)')
+    })
+
+    it('clamps a negative tint value up to 0', () => {
+      render(
+        <FileView
+          view={view()}
+          lineHeight={20}
+          tint={{ added: -20, unchanged: 14, deleted: 40 }}
+        />
+      )
+      const rowEl = screen.getByText('const b = 2').closest('[data-state]')
+      expect(rowEl.style.backgroundColor).toBe('color-mix(in srgb, var(--color-added) 0%, transparent)')
+    })
+
+    it('degrades a non-number tint value to valid CSS instead of throwing', () => {
+      render(
+        <FileView
+          view={view()}
+          lineHeight={20}
+          tint={{ added: 'not-a-number', unchanged: 14, deleted: 40 }}
+        />
+      )
+      const rowEl = screen.getByText('const b = 2').closest('[data-state]')
+      expect(rowEl.style.backgroundColor).toBe('color-mix(in srgb, var(--color-added) 0%, transparent)')
+    })
+  })
+
   // buildRows produces one row per line when there are no deletions, so a
   // line's row index is its 1-based line number minus one.
   const bigView = (path, total, addedLines) =>

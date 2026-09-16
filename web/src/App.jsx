@@ -171,7 +171,16 @@ export default function App() {
           <FileTree files={files} selectedPath={selected} onSelect={setSelected} />
         </aside>
         <main className="min-w-0 flex-1">
-          <FileView ref={fileViewRef} view={view} lineHeight={config?.lineHeight ?? 20} />
+          <FileView
+            ref={fileViewRef}
+            view={view}
+            lineHeight={config?.lineHeight ?? 20}
+            tint={{
+              added: config?.tint?.added ?? 45,
+              unchanged: config?.tint?.unchanged ?? 14,
+              deleted: config?.tint?.deleted ?? 40
+            }}
+          />
         </main>
       </div>
 
