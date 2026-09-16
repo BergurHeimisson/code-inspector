@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+target="$0"
+while [ -L "$target" ]; do
+  link=$(readlink "$target")
+  case "$link" in
+    /*) target="$link" ;;
+    *) target="$(dirname "$target")/$link" ;;
+  esac
+done
+
+app_dir="$(cd "$(dirname "$target")/.." && pwd)"
+
+if [ ! -d "$app_dir/web/dist" ]; then
+  echo "code-inspector: no build found, running npm run build" >&2
+  (cd "$app_dir" && npm run build >/dev/null)
+fi
+
+exec node "$app_dir/server/start.js" "$@"
