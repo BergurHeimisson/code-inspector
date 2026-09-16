@@ -1,0 +1,36 @@
+{
+  "name": "code-inspector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "code-inspector": "./bin/code-inspector"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"node server/start.js --dev\" \"vite\"",
+    "build": "vite build",
+    "start": "node server/start.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "3.14.13",
+    "express": "5.2.1",
+    "lucide-react": "1.46.0",
+    "open": "11.0.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "concurrently": "10.0.5",
+    "jsdom": "30.0.1",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  }
+}
