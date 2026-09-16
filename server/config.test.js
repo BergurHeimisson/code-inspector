@@ -77,6 +77,23 @@ describe('loadConfig', () => {
     expect(config.themes.light.surface).toBe(DEFAULT_CONFIG.themes.light.surface)
   })
 
+  it('exposes the default tint block', async () => {
+    const { loadConfig, DEFAULT_CONFIG } = await import('./config.js')
+    const config = await loadConfig()
+    expect(config.tint).toEqual({ added: 45, unchanged: 14, deleted: 40 })
+    expect(config.tint).toEqual(DEFAULT_CONFIG.tint)
+  })
+
+  it('merges a partial tint override, keeping the other tint values at their defaults', async () => {
+    await writeFile(join(dir, 'config.json'), JSON.stringify({ tint: { added: 70 } }))
+    const { loadConfig, DEFAULT_CONFIG } = await import('./config.js')
+    const config = await loadConfig()
+
+    expect(config.tint.added).toBe(70)
+    expect(config.tint.unchanged).toBe(DEFAULT_CONFIG.tint.unchanged)
+    expect(config.tint.deleted).toBe(DEFAULT_CONFIG.tint.deleted)
+  })
+
   it('preserves an unknown key not present in the defaults', async () => {
     await writeFile(join(dir, 'config.json'), JSON.stringify({ futureFlag: true }))
     const { loadConfig } = await import('./config.js')

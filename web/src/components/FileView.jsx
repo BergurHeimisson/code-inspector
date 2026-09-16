@@ -2,21 +2,30 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'rea
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { buildRows } from '../rows.js'
 
-const TINT = {
-  added: 'color-mix(in srgb, var(--color-added) 26%, transparent)',
-  unchanged: 'color-mix(in srgb, var(--color-unchanged) 14%, transparent)',
-  deleted: 'color-mix(in srgb, var(--color-deleted) 26%, transparent)'
+function clampPercent(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0
+}
+
+// How much of a state colour reaches the screen is configurable, not just
+// which colour is used: a fixed percentage reads differently against a
+// light versus a dark surface, so the strength itself has to be a knob.
+function buildTint(tint) {
+  return {
+    added: `color-mix(in srgb, var(--color-added) ${clampPercent(tint.added)}%, transparent)`,
+    unchanged: `color-mix(in srgb, var(--color-unchanged) ${clampPercent(tint.unchanged)}%, transparent)`,
+    deleted: `color-mix(in srgb, var(--color-deleted) ${clampPercent(tint.deleted)}%, transparent)`
+  }
 }
 
 function Stub({ children }) {
   return <div className="p-6 text-sm opacity-60">{children}</div>
 }
 
-function DeletionRow({ count, lineHeight }) {
+function DeletionRow({ count, lineHeight, tint }) {
   return (
     <div
       className="flex items-center gap-2 px-3 font-mono text-[11px] italic"
-      style={{ backgroundColor: TINT.deleted, height: `${lineHeight}px` }}
+      style={{ backgroundColor: tint.deleted, height: `${lineHeight}px` }}
     >
       <span className="opacity-80">{`${count} line${count === 1 ? '' : 's'} deleted`}</span>
     </div>
@@ -35,14 +44,14 @@ export function changeGroupStarts(rows) {
   return starts
 }
 
-function LineRow({ row, lineHeight }) {
+function LineRow({ row, lineHeight, tint }) {
   return (
     <div
       data-state={row.state}
       data-line={row.n}
       className="flex font-mono text-[12.5px]"
       style={{
-        backgroundColor: TINT[row.state],
+        backgroundColor: tint[row.state],
         height: `${lineHeight}px`,
         lineHeight: `${lineHeight}px`
       }}
@@ -53,9 +62,12 @@ function LineRow({ row, lineHeight }) {
   )
 }
 
-const FileView = forwardRef(function FileView({ view, lineHeight }, ref) {
+const DEFAULT_TINT = { added: 45, unchanged: 14, deleted: 40 }
+
+const FileView = forwardRef(function FileView({ view, lineHeight, tint = DEFAULT_TINT }, ref) {
   const scrollRef = useRef(null)
   const cursorRef = useRef(-1)
+  const resolvedTint = useMemo(() => buildTint(tint), [tint])
   const rows = useMemo(
     () => (view ? buildRows(view.lines, view.deletions) : []),
     [view]
@@ -122,8 +134,8 @@ const FileView = forwardRef(function FileView({ view, lineHeight }, ref) {
                   }}
                 >
                   {row.kind === 'line'
-                    ? <LineRow row={row} lineHeight={lineHeight} />
-                    : <DeletionRow count={row.count} lineHeight={lineHeight} />}
+                    ? <LineRow row={row} lineHeight={lineHeight} tint={resolvedTint} />
+                    : <DeletionRow count={row.count} lineHeight={lineHeight} tint={resolvedTint} />}
                 </div>
               )
             })}

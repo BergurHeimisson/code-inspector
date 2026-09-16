@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { forwardRef } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App.jsx'
@@ -19,10 +20,27 @@ vi.mock('./api.js', () => ({
   rangeToParam: (range) => range.mode
 }))
 
+// FileView's own tests cover its rendering; jsdom performs no box layout,
+// which leaves its virtualiser producing zero rows here regardless of what
+// App passes down. Stubbed so App's prop-wiring to FileView (lineHeight,
+// tint) can be asserted directly instead of through virtualised DOM output.
+vi.mock('./components/FileView.jsx', () => ({
+  default: forwardRef(function FileViewStub({ view, lineHeight, tint }, ref) {
+    return (
+      <div
+        data-testid="file-view-stub"
+        data-line-height={lineHeight}
+        data-tint={JSON.stringify(tint)}
+      />
+    )
+  })
+}))
+
 const CONFIG = {
   defaultTheme: 'dark',
   maxFileBytes: 2097152,
   lineHeight: 20,
+  tint: { added: 70, unchanged: 14, deleted: 40 },
   themes: {
     dark: {
       surface: '#1e1f29',
@@ -143,6 +161,27 @@ describe('App', () => {
     api.initial.mockResolvedValue({ path: null })
     render(<App />)
     expect(await screen.findByText('Select project')).toBeInTheDocument()
+  })
+
+  it('passes the loaded config tint values through to FileView', async () => {
+    render(<App />)
+    await screen.findByText('a.js')
+    await waitFor(() =>
+      expect(screen.getByTestId('file-view-stub').dataset.tint).toBe(
+        JSON.stringify({ added: 70, unchanged: 14, deleted: 40 })
+      )
+    )
+  })
+
+  it('falls back to sensible tint defaults when the config omits the tint block', async () => {
+    api.config.mockResolvedValue({ ...CONFIG, tint: undefined })
+    render(<App />)
+    await screen.findByText('a.js')
+    await waitFor(() =>
+      expect(screen.getByTestId('file-view-stub').dataset.tint).toBe(
+        JSON.stringify({ added: 45, unchanged: 14, deleted: 40 })
+      )
+    )
   })
 
   it('shows an error when loading the project fails', async () => {
