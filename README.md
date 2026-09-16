@@ -62,6 +62,10 @@ The header dropdown selects what "changed" means:
 the default theme, the maximum file size and the line height. Edit it and reload
 the page; no rebuild is needed.
 
+The sun/moon button in the header switches themes, and the choice is remembered:
+
+![The same view in the light theme: a white background with the changed lines tinted in a paler wash of the same colour](docs/screenshot-light.png)
+
 `~/.config/code-inspector/state.json` is written by the app and holds the last
 project, the recent list and the theme choice.
 
