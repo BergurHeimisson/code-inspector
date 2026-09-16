@@ -4,6 +4,8 @@ A local web UI for reviewing everything changed on the current branch of a git
 repository. File tree on the left, full file content on the right with changed
 lines tinted.
 
+![The file tree on the left lists each changed file with its added and removed line counts; the pane on the right shows the selected file in full, with the changed lines tinted](docs/screenshot.png)
+
 Diff tools show you the hunks. This shows you the whole file, with the added,
 changed and deleted lines tinted in place, so a change is always read in the
 context it lives in.
