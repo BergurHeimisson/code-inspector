@@ -6,7 +6,7 @@ import { changedFiles } from '../git/changes.js'
 import { fileLines } from '../git/file.js'
 import { listDirectory } from '../browse.js'
 import { loadConfig } from '../config.js'
-import { loadState, saveState, rememberProject } from '../state.js'
+import { loadState, saveState, rememberProject, markVisited } from '../state.js'
 import { initialProject } from '../launch.js'
 
 export function parseRange(value) {
@@ -109,6 +109,17 @@ export function apiRouter() {
   router.put('/state', async (req, res, next) => {
     try {
       res.json(await saveState(req.body ?? {}))
+    } catch (error) {
+      next(error)
+    }
+  })
+
+  router.post('/state/visited', async (req, res, next) => {
+    try {
+      const { path, file, signature, paths } = req.body ?? {}
+      if (!path) throw badRequest('Missing path in body')
+      if (!file) throw badRequest('Missing file in body')
+      res.json(await markVisited(path, file, String(signature ?? ''), paths ?? [file]))
     } catch (error) {
       next(error)
     }

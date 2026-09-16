@@ -43,5 +43,7 @@ export const api = {
   config: () => request('/api/config'),
   state: () => request('/api/state'),
   saveState: (patch) => request('/api/state', json('PUT', patch)),
-  rememberProject: (path) => request('/api/state/project', json('POST', { path }))
+  rememberProject: (path) => request('/api/state/project', json('POST', { path })),
+  markVisited: (path, file, signature, paths) =>
+    request('/api/state/visited', json('POST', { path, file, signature, paths }))
 }

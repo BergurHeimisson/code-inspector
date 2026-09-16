@@ -91,4 +91,46 @@ describe('FileTree', () => {
     )
     expect(screen.getByText('2 files +15 −3')).toBeInTheDocument()
   })
+
+  it('colours a file visited at the counts it was seen at', () => {
+    render(
+      <FileTree
+        files={[file('a.js', { added: 2, removed: 1 })]}
+        visited={{ 'a.js': '2/1' }}
+        range={{ mode: 'auto' }}
+        selectedPath={null}
+        onSelect={() => {}}
+      />
+    )
+
+    expect(screen.getByText('a.js')).toHaveStyle({ color: 'var(--color-visited)' })
+  })
+
+  it('drops the mark once the file has changed again', () => {
+    render(
+      <FileTree
+        files={[file('a.js', { added: 9, removed: 1 })]}
+        visited={{ 'a.js': '2/1' }}
+        range={{ mode: 'auto' }}
+        selectedPath={null}
+        onSelect={() => {}}
+      />
+    )
+
+    expect(screen.getByText('a.js')).not.toHaveStyle({ color: 'var(--color-visited)' })
+  })
+
+  it('leaves an unvisited file alone', () => {
+    render(
+      <FileTree
+        files={[file('a.js')]}
+        visited={{}}
+        range={{ mode: 'auto' }}
+        selectedPath={null}
+        onSelect={() => {}}
+      />
+    )
+
+    expect(screen.getByText('a.js')).not.toHaveStyle({ color: 'var(--color-visited)' })
+  })
 })

@@ -15,6 +15,7 @@ vi.mock('./api.js', () => ({
     config: vi.fn(),
     state: vi.fn(),
     saveState: vi.fn(),
+    markVisited: vi.fn(),
     rememberProject: vi.fn()
   },
   rangeToParam: (range) => range.mode
@@ -100,6 +101,7 @@ beforeEach(() => {
   api.state.mockResolvedValue({
     lastProject: null,
     recents: [],
+    visited: {},
     paneWidth: 280,
     theme: null,
     scheme: null
@@ -110,6 +112,7 @@ beforeEach(() => {
   api.file.mockResolvedValue(FILE)
   api.rememberProject.mockResolvedValue({ lastProject: '/repos/jetlog', recents: ['/repos/jetlog'] })
   api.saveState.mockResolvedValue({})
+  api.markVisited.mockResolvedValue({ visited: {} })
   api.fsList.mockResolvedValue({ path: '/home/me', parent: null, entries: [] })
 })
 
@@ -326,5 +329,39 @@ describe('App', () => {
     expect(await screen.findByText('Not a git repository: /repos/other')).toBeInTheDocument()
     expect(screen.queryByText('a.js')).not.toBeInTheDocument()
     expect(screen.queryByText('jetlog')).not.toBeInTheDocument()
+  })
+
+  it('records a file as visited when it is clicked', async () => {
+    render(<App />)
+    await userEvent.click(await screen.findByText('b.js'))
+
+    await waitFor(() => {
+      expect(api.markVisited).toHaveBeenCalledWith('/repos/jetlog', 'src/b.js', '5/0', [
+        'src/a.js',
+        'src/b.js'
+      ])
+    })
+  })
+
+  it('does not mark the file it auto-selects on load', async () => {
+    render(<App />)
+    await screen.findByText('a.js')
+    await waitFor(() => expect(api.file).toHaveBeenCalled())
+
+    expect(api.markVisited).not.toHaveBeenCalled()
+  })
+
+  it('colours a file already visited in saved state', async () => {
+    api.state.mockResolvedValue({
+      lastProject: null,
+      recents: [],
+      visited: { '/repos/jetlog': { 'src/a.js': '2/1' } },
+      paneWidth: 280,
+      theme: null,
+      scheme: null
+    })
+
+    render(<App />)
+    expect(await screen.findByText('a.js')).toHaveStyle({ color: 'var(--color-visited)' })
   })
 })

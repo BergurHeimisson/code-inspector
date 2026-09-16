@@ -157,6 +157,25 @@ describe('config and state endpoints', () => {
     expect((await get('/api/state')).body.paneWidth).toBe(333)
   })
 
+  it('marks a file visited under its repository', async () => {
+    const response = await fetch(`${baseUrl}/api/state/visited`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: '/repos/alpha', file: 'a.js', signature: '3/1', paths: ['a.js'] })
+    })
+    expect(response.status).toBe(200)
+    expect((await response.json()).visited['/repos/alpha']).toEqual({ 'a.js': '3/1' })
+  })
+
+  it('rejects a visited call with no file', async () => {
+    const response = await fetch(`${baseUrl}/api/state/visited`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: '/repos/alpha' })
+    })
+    expect(response.status).toBe(400)
+  })
+
   it('remembers a project', async () => {
     const response = await fetch(`${baseUrl}/api/state/project`, {
       method: 'POST',

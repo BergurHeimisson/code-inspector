@@ -16,12 +16,14 @@ describe('applyTheme', () => {
         border: '#333333',
         added: '#d98a30',
         unchanged: '#2f6b4a',
-        deleted: '#8a3030'
+        deleted: '#8a3030',
+        visited: '#a0aad4'
       },
       'dark',
       root
     )
 
+    expect(root.style.getPropertyValue('--color-visited')).toBe('#a0aad4')
     expect(root.style.getPropertyValue('--color-surface')).toBe('#111111')
     expect(root.style.getPropertyValue('--color-added')).toBe('#d98a30')
     expect(root.style.getPropertyValue('--color-deleted')).toBe('#8a3030')

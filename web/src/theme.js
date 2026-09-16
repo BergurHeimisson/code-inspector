@@ -1,4 +1,4 @@
-const TOKENS = ['surface', 'text', 'border', 'added', 'unchanged', 'deleted']
+const TOKENS = ['surface', 'text', 'border', 'added', 'unchanged', 'deleted', 'visited']
 
 export function applyTheme(tokens, theme, root = document.documentElement) {
   for (const name of TOKENS) {

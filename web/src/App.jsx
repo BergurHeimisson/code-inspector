@@ -3,7 +3,7 @@ import { api } from './api.js'
 import { applyTheme, resolveTheme, resolveScheme } from './theme.js'
 import { useKeyboard } from './useKeyboard.js'
 import Header from './components/Header.jsx'
-import FileTree from './components/FileTree.jsx'
+import FileTree, { signatureOf } from './components/FileTree.jsx'
 import FileView from './components/FileView.jsx'
 import ProjectPicker from './components/ProjectPicker.jsx'
 
@@ -13,6 +13,7 @@ export default function App() {
   const [scheme, setScheme] = useState('amber')
   const [recents, setRecents] = useState([])
   const [paneWidth, setPaneWidth] = useState(280)
+  const [visited, setVisited] = useState({})
   const [root, setRoot] = useState(null)
   const [project, setProject] = useState(null)
   const [changes, setChanges] = useState(null)
@@ -24,12 +25,18 @@ export default function App() {
   const fileViewRef = useRef(null)
 
   const files = changes?.files ?? []
+  const allVisited = useRef({})
+
+  const setAllVisited = useCallback((next) => {
+    allVisited.current = next
+  }, [])
 
   useEffect(() => {
     Promise.all([api.config(), api.state(), api.initial()])
       .then(([loadedConfig, state, initial]) => {
         setConfig(loadedConfig)
         setRecents(state.recents ?? [])
+        setAllVisited(state.visited ?? {})
         setPaneWidth(state.paneWidth ?? 280)
 
         const active = resolveTheme(loadedConfig, state)
@@ -64,6 +71,7 @@ export default function App() {
         if (cancelled) return
         setProject(loadedProject)
         setChanges(loadedChanges)
+        setVisited(allVisited.current[loadedProject.root] ?? {})
         setSelected((current) => {
           // `r` retriggers this effect by giving `range` a new identity with
           // the same contents, so a path that is still present after a
@@ -137,14 +145,32 @@ export default function App() {
     [theme, config]
   )
 
+  // Auto-selection on load must not mark anything: a file counts as verified
+  // because you chose to look at it, not because it happened to be first.
+  const openFile = useCallback(
+    (path) => {
+      setSelected(path)
+      const file = files.find((entry) => entry.path === path)
+      if (!root || !file) return
+
+      const signature = signatureOf(file)
+      setVisited((current) => ({ ...current, [path]: signature }))
+      api
+        .markVisited(root, path, signature, files.map((entry) => entry.path))
+        .then((state) => setAllVisited(state.visited ?? {}))
+        .catch(() => {})
+    },
+    [files, root, setAllVisited]
+  )
+
   const step = useCallback(
     (delta) => {
       if (files.length === 0) return
       const index = files.findIndex((file) => file.path === selected)
       const next = Math.min(files.length - 1, Math.max(0, index + delta))
-      setSelected(files[next].path)
+      openFile(files[next].path)
     },
-    [files, selected]
+    [files, selected, openFile]
   )
 
   const jumpChange = useCallback((delta) => {
@@ -186,7 +212,13 @@ export default function App() {
           style={{ width: `${paneWidth}px` }}
           className="shrink-0 overflow-hidden border-r border-border"
         >
-          <FileTree files={files} range={range} selectedPath={selected} onSelect={setSelected} />
+          <FileTree
+            files={files}
+            visited={visited}
+            range={range}
+            selectedPath={selected}
+            onSelect={openFile}
+          />
         </aside>
         <main className="min-w-0 flex-1">
           <FileView

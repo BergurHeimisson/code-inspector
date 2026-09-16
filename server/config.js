@@ -30,7 +30,8 @@ export const DEFAULT_CONFIG = {
       border: '#44475a',
       added: '#d98a30',
       unchanged: '#2f6b4a',
-      deleted: '#8a3030'
+      deleted: '#8a3030',
+      visited: '#a0aad4'
     },
     light: {
       surface: '#ffffff',
@@ -38,7 +39,8 @@ export const DEFAULT_CONFIG = {
       border: '#d0d2e0',
       added: '#b35c00',
       unchanged: '#1c6b3f',
-      deleted: '#a11a1a'
+      deleted: '#a11a1a',
+      visited: '#5a5f7a'
     }
   }
 }

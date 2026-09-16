@@ -20,8 +20,13 @@ function Counts({ added, removed }) {
   )
 }
 
-function FileRow({ node, depth, selectedPath, onSelect }) {
+export function signatureOf(file) {
+  return `${file.added}/${file.removed}`
+}
+
+function FileRow({ node, depth, visited, selectedPath, onSelect }) {
   const selected = node.path === selectedPath
+  const seen = visited?.[node.path] === signatureOf(node.file)
   return (
     <button
       type="button"
@@ -37,13 +42,15 @@ function FileRow({ node, depth, selectedPath, onSelect }) {
         className="size-1.5 shrink-0 rounded-full"
         style={{ backgroundColor: DOT_COLOR[node.file.status] ?? 'var(--color-border)' }}
       />
-      <span className="truncate">{node.name}</span>
+      <span className="truncate" style={seen ? { color: 'var(--color-visited)' } : undefined}>
+        {node.name}
+      </span>
       <Counts added={node.file.added} removed={node.file.removed} />
     </button>
   )
 }
 
-function DirRow({ node, depth, selectedPath, onSelect }) {
+function DirRow({ node, depth, visited, selectedPath, onSelect }) {
   const [open, setOpen] = useState(true)
   const Chevron = open ? ChevronDown : ChevronRight
 
@@ -65,6 +72,7 @@ function DirRow({ node, depth, selectedPath, onSelect }) {
             key={child.path}
             node={child}
             depth={depth + 1}
+            visited={visited}
             selectedPath={selectedPath}
             onSelect={onSelect}
           />
@@ -77,7 +85,7 @@ function Row(props) {
   return props.node.type === 'dir' ? <DirRow {...props} /> : <FileRow {...props} />
 }
 
-export default function FileTree({ files, range, selectedPath, onSelect }) {
+export default function FileTree({ files, visited, range, selectedPath, onSelect }) {
   const tree = buildTree(files)
   const added = files.reduce((sum, f) => sum + f.added, 0)
   const removed = files.reduce((sum, f) => sum + f.removed, 0)
@@ -104,6 +112,7 @@ export default function FileTree({ files, range, selectedPath, onSelect }) {
             key={node.path}
             node={node}
             depth={0}
+            visited={visited}
             selectedPath={selectedPath}
             onSelect={onSelect}
           />

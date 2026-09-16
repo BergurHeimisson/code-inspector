@@ -134,4 +134,10 @@ describe('loadConfig', () => {
       await chmod(dir, 0o700)
     }
   })
+
+  it('ships a visited colour for both themes', async () => {
+    const { DEFAULT_CONFIG } = await import('./config.js')
+    expect(DEFAULT_CONFIG.themes.dark.visited).toMatch(/^#[0-9a-f]{6}$/)
+    expect(DEFAULT_CONFIG.themes.light.visited).toMatch(/^#[0-9a-f]{6}$/)
+  })
 })

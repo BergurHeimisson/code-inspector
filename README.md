@@ -32,6 +32,11 @@ offers a picker.
 Only files git tracks are listed. A new file shows up once you `git add` it, so
 scratch files and build leftovers stay out of the review.
 
+Opening a file marks it: its name turns the `visited` colour so you can see what
+you have already checked. The mark is remembered per project between runs, and
+lapses on its own if the file changes again after you read it — so a file the
+agent touched a second time comes back for another look.
+
 The server binds `127.0.0.1`, so it is reachable only from this machine. Passing
 `--tailnet` also binds your Tailscale address and prints that URL, which lets
 you read the diff from a phone or another laptop on your tailnet. Only the

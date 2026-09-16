@@ -98,7 +98,8 @@ uncommitted changes arrive together with no merging of two sources.
 | `GET /api/changes?path=&range=` | `[{path, status, added, removed}]` |
 | `GET /api/file?path=&file=&range=` | `{lines: [{n, text, state}], deletions: [{after, count}]}` |
 | `GET /api/fs/list?path=` | subdirectories, each flagged `isGitRepo` |
-| `GET/PUT /api/state` | `lastProject`, `recents`, pane width |
+| `GET/PUT /api/state` | `lastProject`, `recents`, pane width, `visited` |
+| `POST /api/state/visited` | marks one file read, merged per repository |
 | `GET /api/config` | colour tokens and display settings |
 
 ### File change list
@@ -106,6 +107,15 @@ uncommitted changes arrive together with no merging of two sources.
 `git diff --numstat <base>`, which reports only what is tracked. Untracked
 files are not listed: a file has to be staged or committed before it appears,
 so scratch files in the working directory never clutter the review.
+
+### Visited files
+
+Opening a file records it under its repository in `state.json` together with the
+`added/removed` signature it was read at. The tree renders a name in the
+`visited` colour only while the stored signature still matches, so an edit after
+the fact retires the mark without a separate invalidation pass. Entries for
+files that have left the change list are pruned on write. Selection made by the
+app itself — the first file on load — does not mark anything.
 
 ### Per-file line states
 
