@@ -27,6 +27,12 @@ would shadow the new one.
 The launch directory wins; outside a repository it reopens the last project, or
 offers a picker.
 
+The server binds `127.0.0.1`, so it is reachable only from this machine. Passing
+`--tailnet` binds every interface and prints your Tailscale URL as well, which
+lets you read the diff from a phone or another laptop on your tailnet. There is
+no authentication, so anything on the tailnet can then read the whole open
+repository — only use it on a tailnet you trust.
+
 ### Range
 
 The header dropdown selects what "changed" means:

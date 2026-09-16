@@ -72,8 +72,11 @@ code-inspector/
 - **Dev:** `npm run dev` — Vite on 5173 proxying `/api` to the server on 5174.
 - **Installed:** the launcher resolves its own install directory through symlinks,
   starts the server on a free port, serves the prebuilt bundle, and opens the
-  browser. Startup prints both the `localhost` and the tailnet URL.
-- **Binding:** `127.0.0.1` only.
+  browser. Startup prints the `localhost` URL, and the tailnet URL only when
+  `--tailnet` was passed.
+- **Binding:** `127.0.0.1` by default. `--tailnet` binds every interface so the
+  printed tailnet URL is actually reachable; it is opt-in because the app serves
+  the full contents of the open repository with no authentication.
 
 ### Why not the alternatives
 
