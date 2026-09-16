@@ -73,4 +73,14 @@ describe('listDirectory', () => {
     const listing = await listDirectory('~', { home })
     expect(listing.path).toBe(home)
   })
+
+  it('flags isGitRepo true when the listed directory is itself a repo', async () => {
+    const listing = await listDirectory(join(home, 'projects/alpha'), { home })
+    expect(listing.isGitRepo).toBe(true)
+  })
+
+  it('flags isGitRepo false when the listed directory is not a repo', async () => {
+    const listing = await listDirectory(join(home, 'projects/notes'), { home })
+    expect(listing.isGitRepo).toBe(false)
+  })
 })
