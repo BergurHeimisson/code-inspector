@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GitBranch, FolderOpen, RefreshCw, Sun, Moon } from 'lucide-react'
 
 const MODES = [
@@ -8,16 +8,35 @@ const MODES = [
   ['ref', 'vs ref']
 ]
 
+// `min` on <input type="number"> only gates form validity, not keystrokes —
+// a leading "-" or a decimal point types straight through. Truncate toward
+// an integer before clamping so "-0.5" (truncates to -0, itself falsy)
+// still lands on 1, not 0.
+function clampCommits(value) {
+  return Math.max(1, Math.trunc(Number(value)) || 1)
+}
+
 // Local state mirrors the DOM value between keystrokes. The parent's `range`
 // prop only reflects what it decided to keep, which may lag a fast typist —
 // without this, each `change` event would fight the previous render's value.
+// The effect resyncs from the prop (compared against its own last-seen
+// value, not the local text) so a programmatic range change — restoring a
+// saved range, a reset — isn't left stranded behind stale typed text.
 function CommitsInput({ n, onRangeChange }) {
   const [text, setText] = useState(String(n ?? 1))
+  const prevN = useRef(n)
+
+  useEffect(() => {
+    if (prevN.current !== n) {
+      prevN.current = n
+      setText(String(n ?? 1))
+    }
+  }, [n])
 
   const handleChange = (event) => {
     const { value } = event.target
     setText(value)
-    onRangeChange({ mode: 'commits', n: Number(value) || 1 })
+    onRangeChange({ mode: 'commits', n: clampCommits(value) })
   }
 
   return (
@@ -34,6 +53,14 @@ function CommitsInput({ n, onRangeChange }) {
 
 function RefInput({ refValue, onRangeChange }) {
   const [text, setText] = useState(refValue ?? '')
+  const prevRef = useRef(refValue)
+
+  useEffect(() => {
+    if (prevRef.current !== refValue) {
+      prevRef.current = refValue
+      setText(refValue ?? '')
+    }
+  }, [refValue])
 
   const handleChange = (event) => {
     setText(event.target.value)
@@ -109,13 +136,9 @@ export default function Header({
         ))}
       </select>
 
-      {range.mode === 'commits' && (
-        <CommitsInput key="commits" n={range.n} onRangeChange={onRangeChange} />
-      )}
+      {range.mode === 'commits' && <CommitsInput n={range.n} onRangeChange={onRangeChange} />}
 
-      {range.mode === 'ref' && (
-        <RefInput key="ref" refValue={range.ref} onRangeChange={onRangeChange} />
-      )}
+      {range.mode === 'ref' && <RefInput refValue={range.ref} onRangeChange={onRangeChange} />}
 
       <div className="ml-auto flex items-center gap-1">
         <IconButton label="Refresh" onClick={onRefresh}>

@@ -5,6 +5,8 @@ import Header from './Header.jsx'
 
 const project = { root: '/repos/jetlog', name: 'jetlog', branch: 'main', label: 'vs origin/main' }
 
+let rerender
+
 const setup = (overrides = {}) => {
   const props = {
     project,
@@ -16,7 +18,7 @@ const setup = (overrides = {}) => {
     onToggleTheme: vi.fn(),
     ...overrides
   }
-  render(<Header {...props} />)
+  ;({ rerender } = render(<Header {...props} />))
   return props
 }
 
@@ -74,5 +76,72 @@ describe('Header', () => {
     const props = setup({ range: { mode: 'ref', ref: '' } })
     await userEvent.type(screen.getByLabelText('Base ref'), 'develop')
     expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'ref', ref: 'develop' })
+  })
+
+  it('clamps a negative commit count to 1', async () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    await userEvent.clear(input)
+    await userEvent.type(input, '-5')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 1 })
+  })
+
+  it('clamps a decimal commit count to an integer', async () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    await userEvent.clear(input)
+    await userEvent.type(input, '2.5')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 2 })
+  })
+
+  it('clamps an empty commit count to 1', async () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    await userEvent.clear(input)
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 1 })
+  })
+
+  it('clamps a zero commit count to 1', async () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    await userEvent.clear(input)
+    await userEvent.type(input, '0')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 1 })
+  })
+
+  it('clamps a non-numeric commit count to 1', async () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'abc')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 1 })
+  })
+
+  it('resyncs the commits input display when the n prop changes externally', () => {
+    const props = setup({ range: { mode: 'commits', n: 3 } })
+    const input = screen.getByLabelText('Number of commits')
+    expect(input).toHaveValue(3)
+    rerender(<Header {...props} range={{ mode: 'commits', n: 7 }} />)
+    expect(screen.getByLabelText('Number of commits')).toHaveValue(7)
+  })
+
+  it('resyncs the ref input display when the ref prop changes externally', () => {
+    const props = setup({ range: { mode: 'ref', ref: 'main' } })
+    const input = screen.getByLabelText('Base ref')
+    expect(input).toHaveValue('main')
+    rerender(<Header {...props} range={{ mode: 'ref', ref: 'develop' }} />)
+    expect(screen.getByLabelText('Base ref')).toHaveValue('develop')
+  })
+
+  it('seeds n: 1 when switching into commits mode', async () => {
+    const props = setup({ range: { mode: 'auto' } })
+    await userEvent.selectOptions(screen.getByLabelText('Change range'), 'commits')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'commits', n: 1 })
+  })
+
+  it("seeds ref: '' when switching into ref mode", async () => {
+    const props = setup({ range: { mode: 'auto' } })
+    await userEvent.selectOptions(screen.getByLabelText('Change range'), 'ref')
+    expect(props.onRangeChange).toHaveBeenLastCalledWith({ mode: 'ref', ref: '' })
   })
 })
